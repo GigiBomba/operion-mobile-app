@@ -1,0 +1,81 @@
+name: Flutter Tests & Coverage
+
+on:
+  push:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/test-flutter.yml"
+  pull_request:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/test-flutter.yml"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: mobile
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        flutter-channel: ["stable"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter ${{ matrix.flutter-channel }}
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ matrix.flutter-channel }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run Flutter tests with coverage
+        run: |
+          flutter test --coverage --machine > test-results.json
+        env:
+          CI: true
+
+      - name: Generate coverage report (lcov)
+        run: |
+          flutter test --coverage
+          genhtml coverage/lcov.info -o coverage/html
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-test-results-${{ matrix.flutter-channel }}
+          path: mobile/test-results.json
+          if-no-files-found: warn
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-coverage-${{ matrix.flutter-channel }}
+          path: |
+            mobile/coverage/
+          if-no-files-found: warn
+
+      - name: Coverage summary
+        if: always()
+        shell: bash
+        run: |
+          echo "## Flutter ${{ matrix.flutter-channel }} coverage results" >> $GITHUB_STEP_SUMMARY
+          if [ -f coverage/lcov.info ]; then
+            LF=$(grep "^LF:" coverage/lcov.info | awk -F: '{s+=$2} END {print s}')
+            LH=$(grep "^LH:" coverage/lcov.info | awk -F: '{s+=$2} END {print s}')
+            if [ "$LF" -gt 0 ] 2>/dev/null; then
+              PCT=$(awk "BEGIN {printf \"%.2f\", ($LH / $LF) * 100}")
+              echo "- **Line coverage:** ${PCT}%" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi

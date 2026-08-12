@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 5A — "Today's KPIs" AppWidget provider metadata.
+     OS-clamped minimum refresh; the real 15-min cadence is app-side
+     (Timer + push-triggered + after events). -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp"
+    android:minHeight="90dp"
+    android:minResizeWidth="140dp"
+    android:minResizeHeight="72dp"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/operion_widget_layout"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen">
+</appwidget-provider>

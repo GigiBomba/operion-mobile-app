@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 5A — "Next stop / active trip" AppWidget provider metadata. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp"
+    android:minHeight="60dp"
+    android:minResizeWidth="140dp"
+    android:minResizeHeight="48dp"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/operion_driver_widget_layout"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen">
+</appwidget-provider>

@@ -1,0 +1,17 @@
+.bun/
+node_modules/
+__pycache__/
+*.pyc
+.env
+build/
+dist/
+.android/
+.idea/
+.vscode/
+*.iml
+*.log
+.DS_Store
+Thumbs.db
+
+# Deepwork session state (git-local)
+.slim/deepwork/

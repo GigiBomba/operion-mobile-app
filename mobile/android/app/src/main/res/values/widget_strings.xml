@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phase 5A widget strings — native-side fixed labels (Phase 5A contract:
+     widget labels are native fixed strings, not l10n-managed). -->
+<resources>
+    <string name="widget_title">Operion Today</string>
+    <string name="widget_subtitle">Today\'s KPIs</string>
+    <string name="widget_active_jobs_label">Active Jobs</string>
+    <string name="widget_open_alerts_label">Open Alerts</string>
+    <string name="widget_revenue_label">Revenue MTD</string>
+    <string name="widget_value_unavailable">—</string>
+    <string name="widget_not_updated">Not updated yet</string>
+    <string name="widget_driver_title">Operion Trip</string>
+    <string name="widget_no_active_trip">No active trip</string>
+    <string name="widget_next_stop_label">Next stop</string>
+</resources>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Phase 5A home-screen widgets (§9.1): the app + the WidgetKit
+	     extension share this App Group. `HomeWidget.setAppGroupId` on the
+	     Dart side must match this identifier exactly. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.operion.operionMobile</string>
+	</array>
+</dict>
+</plist>
