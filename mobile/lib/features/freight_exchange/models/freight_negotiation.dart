@@ -8,8 +8,8 @@ library;
 
 /// Direction of a negotiation record relative to the company.
 ///
-/// `to` = the counterparty's offer/response addressed to the company;
-/// `from` = the company's own counter/response (backend sends both sides).
+/// The backend emits `inbound` (counterparty → company) / `outbound`
+/// (company → counterparty); `to`/`from` are kept as legacy aliases.
 enum FreightNegotiationDirection {
   to('to'),
   from('from');
@@ -19,10 +19,11 @@ enum FreightNegotiationDirection {
   final String apiValue;
 
   static FreightNegotiationDirection fromApiString(String? value) {
-    for (final d in values) {
-      if (d.apiValue == value) return d;
-    }
-    return FreightNegotiationDirection.to;
+    return switch (value) {
+      'to' || 'inbound' => FreightNegotiationDirection.to,
+      'from' || 'outbound' => FreightNegotiationDirection.from,
+      _ => FreightNegotiationDirection.to,
+    };
   }
 }
 

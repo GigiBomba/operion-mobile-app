@@ -132,6 +132,17 @@ void main() {
       expect(settled.isSettled, isTrue);
     });
 
+    test('fromApiString maps backend inbound/outbound + legacy to/from', () {
+      expect(FreightNegotiationDirection.fromApiString('outbound'),
+          FreightNegotiationDirection.from);
+      expect(FreightNegotiationDirection.fromApiString('inbound'),
+          FreightNegotiationDirection.to);
+      expect(FreightNegotiationDirection.fromApiString('from'),
+          FreightNegotiationDirection.from);
+      expect(FreightNegotiationDirection.fromApiString('to'),
+          FreightNegotiationDirection.to);
+    });
+
     test('fromApiString tolerates unknown status/direction', () {
       expect(FreightNegotiationStatus.fromApiString('bogus'),
           FreightNegotiationStatus.offered);
@@ -282,6 +293,30 @@ void main() {
       expect(find.text('Accept'), findsOneWidget);
       expect(find.text('Reject'), findsOneWidget);
       expect(find.text('Counter'), findsOneWidget);
+    });
+
+    testWidgets('backend inbound/outbound directions render "You" on '
+        'outbound rows', (tester) async {
+      final endpoints = _StubFreightEndpoints()
+        ..threadResponse = threadFixture(records: [
+          negotiationJson(id: 'n1', direction: 'inbound', amount: 1850.0),
+          negotiationJson(
+            id: 'n2',
+            direction: 'outbound',
+            amount: 1900.0,
+            counterparty: null,
+          ),
+        ]);
+      await tester.pumpWidget(wrap(tester, endpoints: endpoints));
+      await tester.pumpAndSettle();
+
+      // The inbound row is attributed to the counterparty; the outbound
+      // (company) row renders the localized "You" author label. (The author
+      // line is `'<author> · <relative time>'`, so match by substring.)
+      expect(find.text('1850.00 EUR'), findsOneWidget);
+      expect(find.text('1900.00 EUR'), findsOneWidget);
+      expect(find.textContaining('Exchange A'), findsOneWidget);
+      expect(find.textContaining('You'), findsOneWidget);
     });
 
     testWidgets('counter flow: expands amount field and posts counter',
