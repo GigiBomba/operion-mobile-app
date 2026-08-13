@@ -99,8 +99,7 @@ void main() {
       // Each container height should be 12
       for (final element in containers.evaluate()) {
         final container = element.widget as Container;
-        expect((container.constraints as BoxConstraints?)?.maxHeight ?? 0,
-            equals(12));
+        expect(container.constraints?.maxHeight ?? 0, equals(12));
       }
     });
 

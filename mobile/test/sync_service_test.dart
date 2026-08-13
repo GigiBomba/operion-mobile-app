@@ -78,7 +78,6 @@ class _FakeSyncEndpoints implements SyncEndpoints {
         );
   }
 
-  @override
   Future<Response> getDelta(String cursor) =>
       throw UnimplementedError('getDelta not expected in these tests');
 }

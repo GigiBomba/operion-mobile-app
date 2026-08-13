@@ -121,8 +121,8 @@ void main() {
         final focusedBorder = _light.inputDecorationTheme.focusedBorder;
         expect(focusedBorder, isA<OutlineInputBorder>());
         final border = focusedBorder as OutlineInputBorder;
-        expect(border.borderSide?.color, AppColors.accent);
-        expect(border.borderSide?.width, 1.5);
+        expect(border.borderSide.color, AppColors.accent);
+        expect(border.borderSide.width, 1.5);
       });
 
       testWidgets('dark theme focused border has accent color',
@@ -130,7 +130,7 @@ void main() {
         final focusedBorder = _dark.inputDecorationTheme.focusedBorder;
         expect(focusedBorder, isA<OutlineInputBorder>());
         final border = focusedBorder as OutlineInputBorder;
-        expect(border.borderSide?.color, AppColors.accent);
+        expect(border.borderSide.color, AppColors.accent);
       });
 
       testWidgets('border radius is lg (8)', (tester) async {

@@ -11,12 +11,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
 
 import 'package:operion_mobile/core/auth/auth_providers.dart';
 import 'package:operion_mobile/core/auth/biometric_service.dart';
 import 'package:operion_mobile/core/storage/secure_token_store.dart';
-import 'package:operion_mobile/core/network/api_client.dart';
 import 'package:operion_mobile/core/i18n/app_localizations.dart';
 import 'package:operion_mobile/features/driver/profile/driver_profile_screen.dart';
 import 'package:operion_mobile/features/driver/profile/driver_profile_providers.dart';

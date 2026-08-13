@@ -11,7 +11,6 @@ import 'package:operion_mobile/core/network/endpoints/driver_endpoints.dart';
 import 'package:operion_mobile/core/i18n/app_localizations.dart';
 import 'package:operion_mobile/features/driver/home/driver_home_screen.dart';
 import 'package:operion_mobile/features/driver/home/driver_providers.dart';
-import 'package:operion_mobile/shared/models/user.dart';
 
 // ---------------------------------------------------------------------------
 // Mock providers

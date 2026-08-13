@@ -28,7 +28,6 @@ class AlertInboxScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final loc = context.loc;
     final alertsAsync = ref.watch(dispatcherAlertsProvider);
 
     return alertsAsync.when(

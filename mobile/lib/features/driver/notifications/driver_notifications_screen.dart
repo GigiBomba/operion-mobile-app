@@ -63,7 +63,6 @@ class DriverNotificationsScreen extends ConsumerWidget {
     List<InAppNotification> notifications,
   ) {
     final grouped = _groupByDate(notifications);
-    final loc = context.loc;
 
     return RefreshIndicator(
       onRefresh: () async {

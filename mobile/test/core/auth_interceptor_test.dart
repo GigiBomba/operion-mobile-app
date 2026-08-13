@@ -52,8 +52,6 @@ void main() {
   group('AuthInterceptor', () {
     String? currentAccessToken;
     String? currentRefreshToken;
-    String? savedAccess;
-    String? savedRefresh;
     bool tokensCleared = false;
     bool forceLogoutCalled = false;
 
@@ -63,18 +61,13 @@ void main() {
     setUp(() {
       currentAccessToken = null;
       currentRefreshToken = null;
-      savedAccess = null;
-      savedRefresh = null;
       tokensCleared = false;
       forceLogoutCalled = false;
 
       interceptor = AuthInterceptor(
         getAccessToken: () async => currentAccessToken,
         getRefreshToken: () async => currentRefreshToken,
-        saveTokens: (access, refresh) async {
-          savedAccess = access;
-          savedRefresh = refresh;
-        },
+        saveTokens: (access, refresh) async {},
         clearTokens: () async {
           tokensCleared = true;
         },

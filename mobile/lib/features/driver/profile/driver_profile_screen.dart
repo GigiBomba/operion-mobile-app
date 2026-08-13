@@ -1228,8 +1228,6 @@ class _ProfileShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [

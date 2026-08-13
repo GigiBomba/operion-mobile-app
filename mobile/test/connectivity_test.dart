@@ -306,7 +306,7 @@ void main() {
 
       // Subscribe before dispose
       var done = false;
-      final sub = monitor.onConnectivityChanged.listen((_) {}, onDone: () {
+      monitor.onConnectivityChanged.listen((_) {}, onDone: () {
         done = true;
       });
 

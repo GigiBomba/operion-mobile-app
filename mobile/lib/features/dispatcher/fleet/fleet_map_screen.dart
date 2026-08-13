@@ -9,9 +9,7 @@ import '../../../core/i18n/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/models/fleet_position.dart';
-import '../../../shared/widgets/offline_banner.dart';
 import '../../../shared/widgets/shimmer_loader.dart';
-import '../../../shared/widgets/staleness_indicator.dart';
 import '../home/dispatcher_providers.dart';
 
 /// Full-screen live fleet map that shows vehicle positions with color-coded
@@ -23,7 +21,6 @@ class FleetMapScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isOffline = ref.watch(isOfflineProvider);
     final fleetAsync = ref.watch(fleetPositionsProvider);
-    final loc = context.loc;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -42,14 +39,6 @@ class FleetMapScreen extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  /// Returns the most recent [lastUpdate] across all positions, or `null`.
-  DateTime? _computeLastUpdated(List<FleetPosition>? positions) {
-    if (positions == null || positions.isEmpty) return null;
-    return positions
-        .map((p) => p.lastUpdate)
-        .reduce((a, b) => a.isAfter(b) ? a : b);
   }
 }
 

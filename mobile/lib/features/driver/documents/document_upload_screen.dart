@@ -10,7 +10,6 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/i18n/app_localizations.dart';
-import '../../../core/network/api_client.dart';
 import '../../../core/sync/action_queue.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -83,7 +82,6 @@ class _DocumentUploadScreenState
   int _ocrPollAttempts = 0;
   static const int _maxOcrAttempts = 5;
   static const Duration _ocrPollInterval = Duration(seconds: 2);
-  String? _documentId;
   Map<String, dynamic>? _ocrResult;
   bool _ocrProcessing = false;
 
@@ -97,7 +95,6 @@ class _DocumentUploadScreenState
       _progress = 0.0;
       _errorMessage = null;
       _ocrResult = null;
-      _documentId = null;
       _ocrProcessing = false;
     });
   }
@@ -118,7 +115,6 @@ class _DocumentUploadScreenState
   /// Polls the OCR status endpoint until results arrive or we time out.
   void _startOcrPolling(String documentId) {
     _cancelOcrPolling();
-    _documentId = documentId;
     _ocrPollAttempts = 0;
     _ocrProcessing = true;
 
@@ -361,7 +357,6 @@ class _DocumentUploadScreenState
   @override
   Widget build(BuildContext context) {
     final loc = context.loc;
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: Text(loc.document_upload)),

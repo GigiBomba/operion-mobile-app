@@ -162,7 +162,7 @@ void main() {
       final events1 = <BusEvent>[];
       final events2 = <BusEvent>[];
       final sub1 = _collect(bus.stream, events1);
-      final sub2 = _collect(bus.stream, events2);
+      _collect(bus.stream, events2);
 
       bus.emit(const ForceLogoutEvent());
       await Future(() {});

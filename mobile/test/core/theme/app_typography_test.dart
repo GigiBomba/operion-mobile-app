@@ -226,11 +226,11 @@ void main() {
     });
 
     testWidgets('bodyLarge has Inter font-family', (tester) async {
-      expect(AppTypography.bodyLarge?.fontFamily, contains('Inter'));
+      expect(AppTypography.bodyLarge.fontFamily, contains('Inter'));
     });
 
     testWidgets('bodyLarge color is textPrimaryLight', (tester) async {
-      expect(AppTypography.bodyLarge?.color, AppColors.textPrimaryLight);
+      expect(AppTypography.bodyLarge.color, AppColors.textPrimaryLight);
     });
   });
 }

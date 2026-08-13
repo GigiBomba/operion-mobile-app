@@ -13,8 +13,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:operion_mobile/core/auth/auth_providers.dart';
 import 'package:operion_mobile/core/auth/biometric_service.dart';
 import 'package:operion_mobile/core/storage/secure_token_store.dart';
-import 'package:operion_mobile/core/network/endpoints/dispatcher_endpoints.dart';
-import 'package:operion_mobile/core/network/api_client.dart';
 import 'package:operion_mobile/core/i18n/app_localizations.dart';
 import 'package:operion_mobile/features/dispatcher/jobs/job_detail_screen.dart';
 import 'package:operion_mobile/features/dispatcher/home/dispatcher_providers.dart';
@@ -43,7 +41,7 @@ Map<String, dynamic> _mockJob() => {
   'company_id': 1,
 };
 
-Widget _wrap({Map<String, dynamic>? jobOverride, Object? detailError}) {
+Widget _wrap({Map<String, dynamic>? jobOverride}) {
   final jobList = jobOverride != null ? [jobOverride] : <Map<String, dynamic>>[ _mockJob() ];
   final overrides = <Override>[
     secureTokenStoreProvider.overrideWithValue(_MockSecureTokenStore()),

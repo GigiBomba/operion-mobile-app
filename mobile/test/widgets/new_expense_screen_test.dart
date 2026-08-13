@@ -9,8 +9,6 @@ import 'package:operion_mobile/core/storage/secure_token_store.dart';
 import 'package:operion_mobile/core/i18n/app_localizations.dart';
 import 'package:operion_mobile/features/driver/expenses/new_expense_screen.dart';
 import 'package:operion_mobile/features/driver/expenses/expense_providers.dart';
-import 'package:operion_mobile/core/network/endpoints/auth_endpoints.dart';
-import 'package:operion_mobile/core/network/api_client.dart';
 import 'package:operion_mobile/shared/models/user.dart';
 
 class _MockSecureTokenStore extends SecureTokenStore {

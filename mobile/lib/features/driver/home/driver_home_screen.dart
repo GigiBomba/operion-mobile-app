@@ -40,7 +40,6 @@ class DriverHomeScreen extends ConsumerWidget {
 
   /// Shimmer skeleton that mimics the dashboard layout while data loads.
   Widget _buildLoadingShimmer(BuildContext context) {
-    final theme = Theme.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(

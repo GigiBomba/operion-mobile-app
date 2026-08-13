@@ -7,28 +7,12 @@ import 'package:operion_mobile/core/auth/auth_providers.dart';
 import 'package:operion_mobile/core/auth/auth_service.dart';
 import 'package:operion_mobile/core/auth/token_manager.dart';
 import 'package:operion_mobile/core/network/message_bus.dart';
-import 'package:operion_mobile/core/storage/secure_token_store.dart';
 import 'package:operion_mobile/l10n/app_localizations.dart';
 import 'package:operion_mobile/shared/models/user.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Fake implementations for provider overrides
 // ─────────────────────────────────────────────────────────────────────────────
-
-class _FakeSecureTokenStore implements SecureTokenStore {
-  @override
-  Future<void> saveTokens(String accessToken, String refreshToken) async {}
-  @override
-  Future<String?> getAccessToken() async => null;
-  @override
-  Future<String?> getRefreshToken() async => null;
-  @override
-  Future<void> clearTokens() async {}
-  @override
-  Future<bool> hasTokens() async => false;
-  @override
-  Future<String> getOrCreateDeviceId() async => 'test-device-uuid';
-}
 
 class _FakeTokenManager implements TokenManager {
   @override

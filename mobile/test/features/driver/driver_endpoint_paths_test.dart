@@ -29,17 +29,16 @@ import 'package:operion_mobile/features/driver/profile/driver_profile_screen.dar
 /// Resolves every request instantly and records it for assertions.
 class _RecordingInterceptor extends Interceptor {
   final List<RequestOptions> requests = [];
-  final int statusCode;
   final dynamic responseData;
 
-  _RecordingInterceptor({this.statusCode = 200, this.responseData});
+  _RecordingInterceptor({this.responseData});
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     requests.add(options);
     handler.resolve(Response(
       requestOptions: options,
-      statusCode: statusCode,
+      statusCode: 200,
       data: responseData ?? {'status': 'ok'},
     ));
   }

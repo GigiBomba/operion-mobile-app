@@ -550,9 +550,9 @@ void main() {
 
     test('enqueue multiple actions maintains order', () async {
       await queue.initialize();
-      final id1 = await queue.enqueue('/first', 'GET');
-      final id2 = await queue.enqueue('/second', 'POST');
-      final id3 = await queue.enqueue('/third', 'DELETE');
+      await queue.enqueue('/first', 'GET');
+      await queue.enqueue('/second', 'POST');
+      await queue.enqueue('/third', 'DELETE');
 
       expect(queue.pendingCount, 3);
       // FIFO means first enqueued is at index 0
@@ -602,8 +602,8 @@ void main() {
 
     test('replayAll replays actions in FIFO order', () async {
       await queue.initialize();
-      final id1 = await queue.enqueue('/first', 'GET');
-      final id2 = await queue.enqueue('/second', 'POST');
+      await queue.enqueue('/first', 'GET');
+      await queue.enqueue('/second', 'POST');
       final replayedOrder = <String>[];
 
       final count = await queue.replayAll((action) async {

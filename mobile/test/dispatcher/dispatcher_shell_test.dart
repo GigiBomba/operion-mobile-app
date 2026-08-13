@@ -17,7 +17,6 @@ import 'package:operion_mobile/core/network/message_bus.dart';
 import 'package:operion_mobile/core/i18n/app_localizations.dart';
 import 'package:operion_mobile/shared/models/fleet_position.dart';
 import 'package:operion_mobile/features/copilot/providers/copilot_providers.dart';
-import 'package:operion_mobile/features/copilot/models/copilot_models.dart';
 import 'package:operion_mobile/core/auth/token_manager.dart';
 import 'package:operion_mobile/core/network/endpoints/auth_endpoints.dart';
 import 'package:operion_mobile/core/network/endpoints/copilot_endpoints.dart';

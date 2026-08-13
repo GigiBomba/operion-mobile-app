@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 
-import 'package:operion_mobile/features/dispatcher/home/dispatcher_home_screen.dart';
 import 'package:operion_mobile/features/dispatcher/home/dispatcher_providers.dart';
 import 'package:operion_mobile/features/dispatcher/jobs/job_list_screen.dart';
 import 'package:operion_mobile/features/dispatcher/jobs/job_detail_screen.dart';
@@ -21,7 +20,6 @@ import 'package:operion_mobile/core/network/endpoints/dispatcher_endpoints.dart'
 import 'package:operion_mobile/core/i18n/app_localizations.dart';
 import 'package:operion_mobile/shared/widgets/shimmer_loader.dart';
 import 'package:operion_mobile/shared/widgets/empty_state.dart';
-import 'package:operion_mobile/shared/widgets/app_card.dart';
 import 'package:operion_mobile/shared/widgets/status_badge.dart';
 
 // ---------------------------------------------------------------------------

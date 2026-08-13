@@ -7,7 +7,6 @@ import 'package:operion_mobile/core/auth/auth_service.dart';
 import 'package:operion_mobile/core/auth/mode_router.dart';
 import 'package:operion_mobile/core/auth/token_manager.dart';
 import 'package:operion_mobile/core/network/message_bus.dart';
-import 'package:operion_mobile/core/storage/secure_token_store.dart';
 import 'package:operion_mobile/features/auth/login_screen.dart';
 import 'package:operion_mobile/features/auth/session_expired_screen.dart';
 import 'package:operion_mobile/features/driver/driver_shell.dart';
@@ -18,36 +17,6 @@ import 'package:operion_mobile/shared/models/user.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 // Fake implementations for the test's ProviderScope
 // ─────────────────────────────────────────────────────────────────────────────
-
-class _FakeSecureTokenStore implements SecureTokenStore {
-  String? _accessToken;
-  String? _refreshToken;
-
-  @override
-  Future<void> saveTokens(String accessToken, String refreshToken) async {
-    _accessToken = accessToken;
-    _refreshToken = refreshToken;
-  }
-
-  @override
-  Future<String?> getAccessToken() async => _accessToken;
-
-  @override
-  Future<String?> getRefreshToken() async => _refreshToken;
-
-  @override
-  Future<void> clearTokens() async {
-    _accessToken = null;
-    _refreshToken = null;
-  }
-
-  @override
-  Future<bool> hasTokens() async =>
-      _accessToken != null && _accessToken!.isNotEmpty;
-
-  @override
-  Future<String> getOrCreateDeviceId() async => 'test-device-uuid';
-}
 
 class _FakeTokenManager implements TokenManager {
   bool _hasTokens = false;

@@ -9,7 +9,6 @@ import 'package:operion_mobile/features/auth/session_expired_screen.dart';
 import 'package:operion_mobile/core/auth/auth_providers.dart';
 import 'package:operion_mobile/core/auth/biometric_service.dart';
 import 'package:operion_mobile/core/storage/secure_token_store.dart';
-import 'package:operion_mobile/core/network/message_bus.dart';
 import 'package:operion_mobile/core/i18n/app_localizations.dart';
 
 // ---------------------------------------------------------------------------
