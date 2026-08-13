@@ -30,7 +30,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(AppTextField),
-      matchesGoldenFile('app_text_field_empty.png'),
+      matchesGoldenFile(goldenFile('app_text_field_empty')),
     );
   });
 
@@ -42,7 +42,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(AppTextField),
-      matchesGoldenFile('app_text_field_filled.png'),
+      matchesGoldenFile(goldenFile('app_text_field_filled')),
     );
   });
 
@@ -61,7 +61,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(AppTextField),
-      matchesGoldenFile('app_text_field_error.png'),
+      matchesGoldenFile(goldenFile('app_text_field_error')),
     );
   });
 
@@ -79,7 +79,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(AppTextField),
-      matchesGoldenFile('app_text_field_readonly.png'),
+      matchesGoldenFile(goldenFile('app_text_field_readonly')),
     );
   });
 }

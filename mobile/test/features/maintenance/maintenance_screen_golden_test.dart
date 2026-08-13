@@ -125,10 +125,10 @@ Future<void> _pumpGolden(
 void main() {
   setUpAll(loadGoldenFonts);
   testWidgets('MaintenanceScreen golden (light)', (tester) async {
-    await _pumpGolden(tester, Brightness.light, 'maintenance_light.png');
+    await _pumpGolden(tester, Brightness.light, goldenFile('maintenance_light'));
   });
 
   testWidgets('MaintenanceScreen golden (dark)', (tester) async {
-    await _pumpGolden(tester, Brightness.dark, 'maintenance_dark.png');
+    await _pumpGolden(tester, Brightness.dark, goldenFile('maintenance_dark'));
   });
 }

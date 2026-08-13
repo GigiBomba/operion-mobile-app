@@ -24,7 +24,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(AppButton),
-      matchesGoldenFile('app_button_primary.png'),
+      matchesGoldenFile(goldenFile('app_button_primary')),
     );
   });
 
@@ -35,7 +35,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(AppButton),
-      matchesGoldenFile('app_button_secondary.png'),
+      matchesGoldenFile(goldenFile('app_button_secondary')),
     );
   });
 
@@ -46,7 +46,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(AppButton),
-      matchesGoldenFile('app_button_disabled.png'),
+      matchesGoldenFile(goldenFile('app_button_disabled')),
     );
   });
 
@@ -59,7 +59,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await expectLater(
       find.byType(AppButton),
-      matchesGoldenFile('app_button_loading.png'),
+      matchesGoldenFile(goldenFile('app_button_loading')),
     );
   });
 }

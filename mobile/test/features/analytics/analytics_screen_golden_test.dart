@@ -100,34 +100,34 @@ Future<void> _pumpGolden(
 void main() {
   setUpAll(loadGoldenFonts);
   testWidgets('analytics revenue tab golden (light)', (tester) async {
-    await _pumpGolden(tester, Brightness.light, 0, 'analytics_revenue_light.png');
+    await _pumpGolden(tester, Brightness.light, 0, goldenFile('analytics_revenue_light'));
   });
 
   testWidgets('analytics revenue tab golden (dark)', (tester) async {
-    await _pumpGolden(tester, Brightness.dark, 0, 'analytics_revenue_dark.png');
+    await _pumpGolden(tester, Brightness.dark, 0, goldenFile('analytics_revenue_dark'));
   });
 
   testWidgets('analytics fleet tab golden (light)', (tester) async {
-    await _pumpGolden(tester, Brightness.light, 1, 'analytics_fleet_light.png');
+    await _pumpGolden(tester, Brightness.light, 1, goldenFile('analytics_fleet_light'));
   });
 
   testWidgets('analytics fleet tab golden (dark)', (tester) async {
-    await _pumpGolden(tester, Brightness.dark, 1, 'analytics_fleet_dark.png');
+    await _pumpGolden(tester, Brightness.dark, 1, goldenFile('analytics_fleet_dark'));
   });
 
   testWidgets('analytics drivers tab golden (light)', (tester) async {
-    await _pumpGolden(tester, Brightness.light, 2, 'analytics_drivers_light.png');
+    await _pumpGolden(tester, Brightness.light, 2, goldenFile('analytics_drivers_light'));
   });
 
   testWidgets('analytics drivers tab golden (dark)', (tester) async {
-    await _pumpGolden(tester, Brightness.dark, 2, 'analytics_drivers_dark.png');
+    await _pumpGolden(tester, Brightness.dark, 2, goldenFile('analytics_drivers_dark'));
   });
 
   testWidgets('analytics aging tab golden (light)', (tester) async {
-    await _pumpGolden(tester, Brightness.light, 3, 'analytics_aging_light.png');
+    await _pumpGolden(tester, Brightness.light, 3, goldenFile('analytics_aging_light'));
   });
 
   testWidgets('analytics aging tab golden (dark)', (tester) async {
-    await _pumpGolden(tester, Brightness.dark, 3, 'analytics_aging_dark.png');
+    await _pumpGolden(tester, Brightness.dark, 3, goldenFile('analytics_aging_dark'));
   });
 }

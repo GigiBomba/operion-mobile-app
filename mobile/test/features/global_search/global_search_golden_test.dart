@@ -61,7 +61,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(Scaffold),
-      matchesGoldenFile('global_search_light.png'),
+      matchesGoldenFile(goldenFile('global_search_light')),
     );
   });
 
@@ -73,7 +73,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(Scaffold),
-      matchesGoldenFile('global_search_dark.png'),
+      matchesGoldenFile(goldenFile('global_search_dark')),
     );
   });
 }

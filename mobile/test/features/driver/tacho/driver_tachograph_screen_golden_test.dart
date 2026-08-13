@@ -81,10 +81,10 @@ Future<void> _pumpGolden(
 void main() {
   setUpAll(loadGoldenFonts);
   testWidgets('DriverTachographScreen golden (light)', (tester) async {
-    await _pumpGolden(tester, Brightness.light, 'driver_tachograph_light.png');
+    await _pumpGolden(tester, Brightness.light, goldenFile('driver_tachograph_light'));
   });
 
   testWidgets('DriverTachographScreen golden (dark)', (tester) async {
-    await _pumpGolden(tester, Brightness.dark, 'driver_tachograph_dark.png');
+    await _pumpGolden(tester, Brightness.dark, goldenFile('driver_tachograph_dark'));
   });
 }

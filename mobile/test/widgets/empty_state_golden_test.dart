@@ -25,7 +25,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(EmptyState),
-      matchesGoldenFile('empty_state_default.png'),
+      matchesGoldenFile(goldenFile('empty_state_default')),
     );
   });
 
@@ -40,7 +40,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(EmptyState),
-      matchesGoldenFile('empty_state_custom.png'),
+      matchesGoldenFile(goldenFile('empty_state_custom')),
     );
   });
 }

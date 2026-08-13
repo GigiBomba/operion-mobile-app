@@ -101,13 +101,13 @@ Future<void> _pumpGolden(
 void main() {
   setUpAll(loadGoldenFonts);
   testWidgets('DriverDetailScreen golden (light)', (tester) async {
-    await _pumpGolden(tester, 'driver_detail_light.png');
+    await _pumpGolden(tester, goldenFile('driver_detail_light'));
   });
 
   testWidgets('DriverDetailScreen golden (dark)', (tester) async {
     await _pumpGolden(
       tester,
-      'driver_detail_dark.png',
+      goldenFile('driver_detail_dark'),
       brightness: Brightness.dark,
     );
   });

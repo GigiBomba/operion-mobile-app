@@ -76,11 +76,11 @@ void main() {
   setUpAll(loadGoldenFonts);
   testWidgets('DocumentCenterScreen golden (light) â€” Â§2 search/categories',
       (tester) async {
-    await _pumpGolden(tester, Brightness.light, 'document_center_light.png');
+    await _pumpGolden(tester, Brightness.light, goldenFile('document_center_light'));
   });
 
   testWidgets('DocumentCenterScreen golden (dark) â€” Â§2 search/categories',
       (tester) async {
-    await _pumpGolden(tester, Brightness.dark, 'document_center_dark.png');
+    await _pumpGolden(tester, Brightness.dark, goldenFile('document_center_dark'));
   });
 }

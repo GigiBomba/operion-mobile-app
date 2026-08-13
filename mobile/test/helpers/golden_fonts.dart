@@ -1,5 +1,19 @@
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+/// Returns the platform-suffixed golden filename for [name].
+///
+/// Flutter golden PNGs containing real text are NOT portable across operating
+/// systems: even with the same Flutter SDK and identical bundled static
+/// fonts, Windows and Linux rasterize glyph edges differently (mean delta
+/// ~55, spread across text rows — text-only goldens fail too). Tests compare
+/// against `*-windows.png` when run on Windows and `*-linux.png` when run on
+/// Linux (the CI runner); both sets are committed and CI's `--update-goldens`
+/// run produces the Linux set.
+String goldenFile(String name) =>
+    '$name-${Platform.isLinux ? 'linux' : 'windows'}.png';
 
 /// Loads the bundled static Inter fonts into the test font registry so golden
 /// tests render deterministic glyphs on every machine.

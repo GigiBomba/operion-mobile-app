@@ -89,10 +89,10 @@ Future<void> _pumpGolden(
 void main() {
   setUpAll(loadGoldenFonts);
   testWidgets('team management screen golden (light)', (tester) async {
-    await _pumpGolden(tester, Brightness.light, 'team_management_screen_light.png');
+    await _pumpGolden(tester, Brightness.light, goldenFile('team_management_screen_light'));
   });
 
   testWidgets('team management screen golden (dark)', (tester) async {
-    await _pumpGolden(tester, Brightness.dark, 'team_management_screen_dark.png');
+    await _pumpGolden(tester, Brightness.dark, goldenFile('team_management_screen_dark'));
   });
 }

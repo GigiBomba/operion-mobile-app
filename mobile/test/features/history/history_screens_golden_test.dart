@@ -169,7 +169,7 @@ void main() {
     await _pumpGolden(
       tester,
       const TripHistoryScreen(),
-      'trip_history_light.png',
+      goldenFile('trip_history_light'),
     );
   });
 
@@ -177,7 +177,7 @@ void main() {
     await _pumpGolden(
       tester,
       const TripHistoryScreen(),
-      'trip_history_dark.png',
+      goldenFile('trip_history_dark'),
       brightness: Brightness.dark,
     );
   });
@@ -186,7 +186,7 @@ void main() {
     await _pumpGolden(
       tester,
       const RouteHistoryScreen(),
-      'route_history_light.png',
+      goldenFile('route_history_light'),
     );
   });
 
@@ -194,7 +194,7 @@ void main() {
     await _pumpGolden(
       tester,
       const RouteHistoryScreen(),
-      'route_history_dark.png',
+      goldenFile('route_history_dark'),
       brightness: Brightness.dark,
     );
   });

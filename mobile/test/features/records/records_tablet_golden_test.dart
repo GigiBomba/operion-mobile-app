@@ -43,8 +43,8 @@ void main() {
       find.byType(Scaffold).first,
       matchesGoldenFile(
         brightness == Brightness.light
-            ? 'records_tablet_light.png'
-            : 'records_tablet_dark.png',
+            ? goldenFile('records_tablet_light')
+            : goldenFile('records_tablet_dark'),
       ),
     );
   }

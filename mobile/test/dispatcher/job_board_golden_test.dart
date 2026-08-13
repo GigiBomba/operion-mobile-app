@@ -149,7 +149,7 @@ void main() {
       _kanbanJobs(),
       'Kanban',
       Brightness.light,
-      'job_list_kanban_light.png',
+      goldenFile('job_list_kanban_light'),
     );
   });
 
@@ -159,7 +159,7 @@ void main() {
       _kanbanJobs(),
       'Kanban',
       Brightness.dark,
-      'job_list_kanban_dark.png',
+      goldenFile('job_list_kanban_dark'),
     );
   });
 
@@ -169,7 +169,7 @@ void main() {
       _timelineJobs(),
       'Timeline',
       Brightness.light,
-      'job_list_timeline_light.png',
+      goldenFile('job_list_timeline_light'),
     );
   });
 
@@ -179,7 +179,7 @@ void main() {
       _timelineJobs(),
       'Timeline',
       Brightness.dark,
-      'job_list_timeline_dark.png',
+      goldenFile('job_list_timeline_dark'),
     );
   });
 }

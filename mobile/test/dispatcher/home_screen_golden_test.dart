@@ -117,10 +117,10 @@ Future<void> _pumpGolden(
 void main() {
   setUpAll(loadGoldenFonts);
   testWidgets('DispatcherHomeScreen golden (light) â€” Â§2 parity', (tester) async {
-    await _pumpGolden(tester, Brightness.light, 'dispatcher_home_light.png');
+    await _pumpGolden(tester, Brightness.light, goldenFile('dispatcher_home_light'));
   });
 
   testWidgets('DispatcherHomeScreen golden (dark) â€” Â§2 parity', (tester) async {
-    await _pumpGolden(tester, Brightness.dark, 'dispatcher_home_dark.png');
+    await _pumpGolden(tester, Brightness.dark, goldenFile('dispatcher_home_dark'));
   });
 }

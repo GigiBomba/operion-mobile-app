@@ -24,7 +24,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(AppCard),
-      matchesGoldenFile('app_card_basic.png'),
+      matchesGoldenFile(goldenFile('app_card_basic')),
     );
   });
 
@@ -72,7 +72,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(AppCard),
-      matchesGoldenFile('app_card_header_footer.png'),
+      matchesGoldenFile(goldenFile('app_card_header_footer')),
     );
   });
 
@@ -87,7 +87,7 @@ void main() {
     await tester.pumpAndSettle();
     await expectLater(
       find.byType(AppCard),
-      matchesGoldenFile('app_card_elevated.png'),
+      matchesGoldenFile(goldenFile('app_card_elevated')),
     );
   });
 }

@@ -103,10 +103,10 @@ Future<void> _pumpGolden(
 void main() {
   setUpAll(loadGoldenFonts);
   testWidgets('InvoiceListScreen golden (light)', (tester) async {
-    await _pumpGolden(tester, Brightness.light, 'invoice_list_light.png');
+    await _pumpGolden(tester, Brightness.light, goldenFile('invoice_list_light'));
   });
 
   testWidgets('InvoiceListScreen golden (dark)', (tester) async {
-    await _pumpGolden(tester, Brightness.dark, 'invoice_list_dark.png');
+    await _pumpGolden(tester, Brightness.dark, goldenFile('invoice_list_dark'));
   });
 }

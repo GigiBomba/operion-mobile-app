@@ -82,14 +82,14 @@ Future<void> _pumpGolden(
 void main() {
   setUpAll(loadGoldenFonts);
   testWidgets('ClientListScreen golden (light)', (tester) async {
-    await _pumpGolden(tester, const ClientListScreen(), 'client_list_light.png');
+    await _pumpGolden(tester, const ClientListScreen(), goldenFile('client_list_light'));
   });
 
   testWidgets('ClientListScreen golden (dark)', (tester) async {
     await _pumpGolden(
       tester,
       const ClientListScreen(),
-      'client_list_dark.png',
+      goldenFile('client_list_dark'),
       brightness: Brightness.dark,
     );
   });
@@ -98,7 +98,7 @@ void main() {
     await _pumpGolden(
       tester,
       const ClientDetailScreen(clientId: 'c1'),
-      'client_detail_light.png',
+      goldenFile('client_detail_light'),
     );
   });
 
@@ -106,7 +106,7 @@ void main() {
     await _pumpGolden(
       tester,
       const ClientDetailScreen(clientId: 'c1'),
-      'client_detail_dark.png',
+      goldenFile('client_detail_dark'),
       brightness: Brightness.dark,
     );
   });
