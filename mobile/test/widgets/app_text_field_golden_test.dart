@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:operion_mobile/shared/widgets/app_text_field.dart';
+import '../helpers/golden_fonts.dart';
 
 /// Wraps [child] in a [MaterialApp] with a constrained width for golden captures.
 /// Accepts an optional [formKey] to embed the field inside a [Form].
@@ -21,6 +22,7 @@ Widget wrapForGolden(Widget child, {GlobalKey<FormState>? formKey}) {
 }
 
 void main() {
+  setUpAll(loadGoldenFonts);
   testWidgets('AppTextField empty golden', (tester) async {
     await tester.pumpWidget(wrapForGolden(
       const AppTextField(labelText: 'Email', hintText: 'email@example.com'),

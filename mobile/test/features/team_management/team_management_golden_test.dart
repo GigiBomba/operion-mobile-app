@@ -10,6 +10,7 @@ import 'package:operion_mobile/features/team_management/providers/team_providers
 import 'package:operion_mobile/features/team_management/screens/team_management_screen.dart';
 import 'package:operion_mobile/l10n/app_localizations.dart';
 import 'package:operion_mobile/shared/models/user.dart';
+import '../../helpers/golden_fonts.dart';
 
 const _adminUser = User(
   id: 'u2',
@@ -86,6 +87,7 @@ Future<void> _pumpGolden(
 }
 
 void main() {
+  setUpAll(loadGoldenFonts);
   testWidgets('team management screen golden (light)', (tester) async {
     await _pumpGolden(tester, Brightness.light, 'team_management_screen_light.png');
   });

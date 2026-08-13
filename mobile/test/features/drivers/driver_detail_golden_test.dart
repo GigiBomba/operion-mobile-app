@@ -8,6 +8,7 @@ import 'package:operion_mobile/features/teams/models/tacho.dart';
 import 'package:operion_mobile/features/teams/providers/teams_providers.dart';
 import 'package:operion_mobile/features/teams/screens/driver_detail_screen.dart';
 import 'package:operion_mobile/shared/models/user.dart';
+import '../../helpers/golden_fonts.dart';
 
 /// Fixed reference date for the detail fixture so the golden's date text is
 /// deterministic (regenerate when the fixtures age past this window).
@@ -98,6 +99,7 @@ Future<void> _pumpGolden(
 }
 
 void main() {
+  setUpAll(loadGoldenFonts);
   testWidgets('DriverDetailScreen golden (light)', (tester) async {
     await _pumpGolden(tester, 'driver_detail_light.png');
   });

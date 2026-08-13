@@ -9,10 +9,11 @@ import 'package:operion_mobile/core/network/api_client.dart';
 import 'package:operion_mobile/features/history/providers/history_providers.dart';
 import 'package:operion_mobile/features/history/screens/route_history_screen.dart';
 import 'package:operion_mobile/features/history/screens/trip_history_screen.dart';
+import '../../helpers/golden_fonts.dart';
 
-/// Dark-mode golden gap-fill (blueprint §9 item 7): TripHistoryScreen and
+/// Dark-mode golden gap-fill (blueprint Â§9 item 7): TripHistoryScreen and
 /// RouteHistoryScreen previously had NO goldens. Fixed-date fixtures with
-/// mixed data, explicit Brightness, provider mocks — per the repo convention.
+/// mixed data, explicit Brightness, provider mocks â€” per the repo convention.
 class _Stub extends HistoryEndpoints {
   _Stub()
       : super(ApiClient.create(
@@ -34,7 +35,7 @@ class _Stub extends HistoryEndpoints {
             'client_name': 'ACME Logistics',
             'truck_number': 'B-100-ABC',
             'driver_name': 'Ion Popescu',
-            'origin': 'București',
+            'origin': 'BucureÈ™ti',
             'destination': 'Cluj-Napoca',
             'status': 'Delivered',
             'start_date': '2026-07-31',
@@ -47,8 +48,8 @@ class _Stub extends HistoryEndpoints {
             'client_name': 'Beta Trading',
             'truck_number': 'B-200-DEF',
             'driver_name': 'Ana Dobre',
-            'origin': 'Timișoara',
-            'destination': 'Constanța',
+            'origin': 'TimiÈ™oara',
+            'destination': 'ConstanÈ›a',
             'status': 'In Transit',
             'start_date': '2026-07-30',
             'end_date': '2026-07-31',
@@ -61,8 +62,8 @@ class _Stub extends HistoryEndpoints {
             'client_name': 'Gamma Foods',
             'truck_number': 'B-300-GHI',
             'driver_name': 'Vlad Marin',
-            'origin': 'Brașov',
-            'destination': 'Iași',
+            'origin': 'BraÈ™ov',
+            'destination': 'IaÈ™i',
             'status': 'Cancelled',
             'start_date': '2026-07-28',
             'total_price_eur': 540,
@@ -88,25 +89,25 @@ class _Stub extends HistoryEndpoints {
         'items': [
           {
             'id': 1,
-            'name': 'Ruta Vest — București → Timișoara',
-            'origin': 'București',
-            'destination': 'Timișoara',
+            'name': 'Ruta Vest â€” BucureÈ™ti â†’ TimiÈ™oara',
+            'origin': 'BucureÈ™ti',
+            'destination': 'TimiÈ™oara',
             'total_distance_km': 428,
             'duration_min': 330,
             'created_at': '2026-07-31',
           },
           {
             'id': 2,
-            'name': 'Ruta Est — Constanța → Iași',
-            'origin': 'Constanța',
-            'destination': 'Iași',
+            'name': 'Ruta Est â€” ConstanÈ›a â†’ IaÈ™i',
+            'origin': 'ConstanÈ›a',
+            'destination': 'IaÈ™i',
             'total_distance_km': 512,
             'duration_min': 400,
             'created_at': '2026-07-29',
           },
           {
             'id': 3,
-            'name': 'Ruta Nord — Cluj → Satu Mare',
+            'name': 'Ruta Nord â€” Cluj â†’ Satu Mare',
             'origin': 'Cluj-Napoca',
             'destination': 'Satu Mare',
             'total_distance_km': 190,
@@ -163,6 +164,7 @@ Future<void> _pumpGolden(
 }
 
 void main() {
+  setUpAll(loadGoldenFonts);
   testWidgets('TripHistoryScreen golden (light)', (tester) async {
     await _pumpGolden(
       tester,

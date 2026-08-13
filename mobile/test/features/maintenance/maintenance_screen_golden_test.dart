@@ -9,6 +9,7 @@ import 'package:operion_mobile/features/maintenance/models/maintenance.dart';
 import 'package:operion_mobile/features/maintenance/providers/maintenance_providers.dart';
 import 'package:operion_mobile/features/maintenance/screens/maintenance_screen.dart';
 import 'package:operion_mobile/shared/models/user.dart';
+import '../../helpers/golden_fonts.dart';
 
 const _adminUser = User(
   id: 'u2',
@@ -122,6 +123,7 @@ Future<void> _pumpGolden(
 }
 
 void main() {
+  setUpAll(loadGoldenFonts);
   testWidgets('MaintenanceScreen golden (light)', (tester) async {
     await _pumpGolden(tester, Brightness.light, 'maintenance_light.png');
   });

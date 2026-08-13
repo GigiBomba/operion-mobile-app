@@ -9,6 +9,7 @@ import 'package:operion_mobile/core/network/api_client.dart';
 import 'package:operion_mobile/core/storage/secure_token_store.dart';
 import 'package:operion_mobile/features/dispatcher/home/dispatcher_home_screen.dart';
 import 'package:operion_mobile/features/dispatcher/home/dispatcher_providers.dart';
+import '../helpers/golden_fonts.dart';
 
 class _MockSecureTokenStore extends SecureTokenStore {
   @override
@@ -36,7 +37,7 @@ ApiClient _stubApiClient() => ApiClient.create(
       getAccessToken: () async => null,
     );
 
-/// Fixed reference for relative-time rows — regenerated per run so the golden
+/// Fixed reference for relative-time rows â€” regenerated per run so the golden
 /// is stable on any machine/date.
 final DateTime _now = DateTime.now();
 
@@ -114,11 +115,12 @@ Future<void> _pumpGolden(
 }
 
 void main() {
-  testWidgets('DispatcherHomeScreen golden (light) — §2 parity', (tester) async {
+  setUpAll(loadGoldenFonts);
+  testWidgets('DispatcherHomeScreen golden (light) â€” Â§2 parity', (tester) async {
     await _pumpGolden(tester, Brightness.light, 'dispatcher_home_light.png');
   });
 
-  testWidgets('DispatcherHomeScreen golden (dark) — §2 parity', (tester) async {
+  testWidgets('DispatcherHomeScreen golden (dark) â€” Â§2 parity', (tester) async {
     await _pumpGolden(tester, Brightness.dark, 'dispatcher_home_dark.png');
   });
 }

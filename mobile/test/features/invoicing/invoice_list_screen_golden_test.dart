@@ -8,6 +8,7 @@ import 'package:operion_mobile/features/invoicing/models/invoice.dart';
 import 'package:operion_mobile/features/invoicing/providers/invoicing_providers.dart';
 import 'package:operion_mobile/features/invoicing/screens/invoice_list_screen.dart';
 import 'package:operion_mobile/shared/models/user.dart';
+import '../../helpers/golden_fonts.dart';
 
 const _adminUser = User(
   id: 'u2',
@@ -100,6 +101,7 @@ Future<void> _pumpGolden(
 }
 
 void main() {
+  setUpAll(loadGoldenFonts);
   testWidgets('InvoiceListScreen golden (light)', (tester) async {
     await _pumpGolden(tester, Brightness.light, 'invoice_list_light.png');
   });

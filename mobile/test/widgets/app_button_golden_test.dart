@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:operion_mobile/shared/widgets/app_button.dart';
+import '../helpers/golden_fonts.dart';
 
 /// Wraps [child] in a [MaterialApp] with a constrained width for golden captures.
 Widget wrapForGolden(Widget child) {
@@ -15,6 +16,7 @@ Widget wrapForGolden(Widget child) {
 }
 
 void main() {
+  setUpAll(loadGoldenFonts);
   testWidgets('AppButton primary golden', (tester) async {
     await tester.pumpWidget(wrapForGolden(
       AppButton.primary(label: 'Sign In', onPressed: () {}),

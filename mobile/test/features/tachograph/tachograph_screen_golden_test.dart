@@ -10,6 +10,7 @@ import 'package:operion_mobile/features/tachograph/models/tacho_compliance.dart'
 import 'package:operion_mobile/features/tachograph/providers/tacho_providers.dart';
 import 'package:operion_mobile/features/tachograph/screens/tachograph_screen.dart';
 import 'package:operion_mobile/l10n/app_localizations.dart';
+import '../../helpers/golden_fonts.dart';
 
 const _result = TachoComplianceResult(
   days: [
@@ -87,6 +88,7 @@ Future<void> _pumpGolden(
 }
 
 void main() {
+  setUpAll(loadGoldenFonts);
   testWidgets('tachograph screen golden (light)', (tester) async {
     await _pumpGolden(tester, Brightness.light, 'tachograph_screen_light.png');
   });

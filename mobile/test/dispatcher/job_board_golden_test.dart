@@ -13,6 +13,7 @@ import 'package:operion_mobile/core/storage/secure_token_store.dart';
 import 'package:operion_mobile/features/dispatcher/home/dispatcher_providers.dart';
 import 'package:operion_mobile/features/dispatcher/jobs/job_list_screen.dart';
 import 'package:operion_mobile/features/dispatcher/jobs/job_providers.dart';
+import '../helpers/golden_fonts.dart';
 
 class _MockSecureTokenStore extends SecureTokenStore {
   @override
@@ -141,6 +142,7 @@ Future<void> _pumpGolden(
 }
 
 void main() {
+  setUpAll(loadGoldenFonts);
   testWidgets('JobListScreen kanban golden (light)', (tester) async {
     await _pumpGolden(
       tester,

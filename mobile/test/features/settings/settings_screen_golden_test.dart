@@ -1,4 +1,4 @@
-// Settings screen goldens (light + dark) — manager view with all 7 sections.
+// Settings screen goldens (light + dark) â€” manager view with all 7 sections.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +10,7 @@ import 'package:operion_mobile/features/settings/providers/settings_endpoints.da
 import 'package:operion_mobile/features/settings/settings_screen.dart';
 import 'package:operion_mobile/l10n/app_localizations.dart';
 import 'package:operion_mobile/shared/models/user.dart';
+import '../../helpers/golden_fonts.dart';
 
 const _managerUser = User(
   id: 'm1',
@@ -73,6 +74,7 @@ Future<void> _pumpGolden(
 }
 
 void main() {
+  setUpAll(loadGoldenFonts);
   testWidgets('settings screen golden (light)', (tester) async {
     await _pumpGolden(tester, Brightness.light, 'settings_screen_light.png');
   });

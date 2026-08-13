@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:operion_mobile/core/i18n/app_localizations.dart';
 import 'package:operion_mobile/features/document_center/providers/document_center_providers.dart';
 import 'package:operion_mobile/features/document_center/screens/document_center_screen.dart';
+import '../../helpers/golden_fonts.dart';
 
 List<Override> _overrides() => [
       companyDocumentsProvider(const DocumentListFilter()).overrideWith(
@@ -72,12 +73,13 @@ Future<void> _pumpGolden(
 }
 
 void main() {
-  testWidgets('DocumentCenterScreen golden (light) — §2 search/categories',
+  setUpAll(loadGoldenFonts);
+  testWidgets('DocumentCenterScreen golden (light) â€” Â§2 search/categories',
       (tester) async {
     await _pumpGolden(tester, Brightness.light, 'document_center_light.png');
   });
 
-  testWidgets('DocumentCenterScreen golden (dark) — §2 search/categories',
+  testWidgets('DocumentCenterScreen golden (dark) â€” Â§2 search/categories',
       (tester) async {
     await _pumpGolden(tester, Brightness.dark, 'document_center_dark.png');
   });

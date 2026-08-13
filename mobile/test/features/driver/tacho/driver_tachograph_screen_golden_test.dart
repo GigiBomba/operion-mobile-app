@@ -7,6 +7,8 @@ import 'package:operion_mobile/features/driver/tacho/providers/driver_tacho_prov
 import 'package:operion_mobile/features/driver/tacho/screens/driver_tachograph_screen.dart';
 import 'package:operion_mobile/features/teams/models/tacho.dart';
 
+import '../../../helpers/golden_fonts.dart';
+
 TachoWeek _week() => TachoWeek(
       weeklyDrivingMinutes: 2400,
       weeklyLimitMinutes: 3360,
@@ -77,6 +79,7 @@ Future<void> _pumpGolden(
 }
 
 void main() {
+  setUpAll(loadGoldenFonts);
   testWidgets('DriverTachographScreen golden (light)', (tester) async {
     await _pumpGolden(tester, Brightness.light, 'driver_tachograph_light.png');
   });

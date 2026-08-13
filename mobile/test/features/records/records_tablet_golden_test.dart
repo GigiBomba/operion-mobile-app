@@ -6,6 +6,7 @@ import 'package:operion_mobile/core/auth/auth_providers.dart';
 import 'package:operion_mobile/core/i18n/app_localizations.dart';
 import 'package:operion_mobile/features/records/records_screen.dart';
 import 'package:operion_mobile/shared/models/user.dart';
+import '../../helpers/golden_fonts.dart';
 
 const _adminUser = User(
   id: 'u2',
@@ -16,6 +17,7 @@ const _adminUser = User(
 );
 
 void main() {
+  setUpAll(loadGoldenFonts);
   Future<void> pumpTablet(WidgetTester tester, Brightness brightness) async {
     tester.view.physicalSize = const Size(800, 1000);
     tester.view.devicePixelRatio = 1.0;

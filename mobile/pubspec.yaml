@@ -93,3 +93,10 @@ flutter:
   generate: true  # for l10n
   assets:
     - assets/images/
+  fonts:
+    # Inter bundled locally (vs. fetched at runtime by google_fonts) so golden
+    # tests and offline builds render deterministic glyphs on every machine —
+    # CI runners cannot fetch Google Fonts during `flutter test`.
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter.ttf

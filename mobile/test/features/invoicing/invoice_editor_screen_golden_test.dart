@@ -8,6 +8,7 @@ import 'package:operion_mobile/features/invoicing/models/invoice.dart';
 import 'package:operion_mobile/features/invoicing/providers/invoicing_providers.dart';
 import 'package:operion_mobile/features/invoicing/screens/invoice_editor_screen.dart';
 import 'package:operion_mobile/shared/models/user.dart';
+import '../../helpers/golden_fonts.dart';
 
 const _adminUser = User(
   id: 'u2',
@@ -17,7 +18,7 @@ const _adminUser = User(
   companyId: 'c1',
 );
 
-/// A finalized (mid-machine) invoice with line items — the editor seeds its
+/// A finalized (mid-machine) invoice with line items â€” the editor seeds its
 /// state from `invoiceDetailProvider` and recomputes totals via the P4 core.
 Invoice _finalizedInvoice() => Invoice.fromJson({
       'id': 'inv-1',
@@ -30,7 +31,7 @@ Invoice _finalizedInvoice() => Invoice.fromJson({
       'due_date': '2026-08-31',
       'line_items': [
         {
-          'description': 'Transport București–Cluj',
+          'description': 'Transport BucureÈ™tiâ€“Cluj',
           'quantity': 3,
           'unit_price': 100.0,
           'vat_rate': 19.0,
@@ -90,6 +91,7 @@ Future<void> _pumpGolden(
 }
 
 void main() {
+  setUpAll(loadGoldenFonts);
   testWidgets('InvoiceEditorScreen golden (light)', (tester) async {
     await _pumpGolden(tester, Brightness.light, 'invoice_editor_light.png');
   });

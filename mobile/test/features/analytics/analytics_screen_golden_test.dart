@@ -7,6 +7,7 @@ import 'package:operion_mobile/core/i18n/app_localizations.dart';
 import 'package:operion_mobile/features/analytics/models/date_range.dart';
 import 'package:operion_mobile/features/analytics/providers/analytics_providers.dart';
 import 'package:operion_mobile/features/analytics/screens/analytics_screen.dart';
+import '../../helpers/golden_fonts.dart';
 
 final _revenue = RevenueAnalytics(
   trend: const [
@@ -18,7 +19,7 @@ final _revenue = RevenueAnalytics(
     ChartPoint(label: 'ACME', value: 90),
     ChartPoint(label: 'Beta', value: 60),
   ],
-  perRoute: const [ChartPoint(label: 'București–Cluj', value: 250)],
+  perRoute: const [ChartPoint(label: 'BucureÈ™tiâ€“Cluj', value: 250)],
 );
 
 const _fleet = FleetUtilizationAnalytics(
@@ -97,6 +98,7 @@ Future<void> _pumpGolden(
 }
 
 void main() {
+  setUpAll(loadGoldenFonts);
   testWidgets('analytics revenue tab golden (light)', (tester) async {
     await _pumpGolden(tester, Brightness.light, 0, 'analytics_revenue_light.png');
   });

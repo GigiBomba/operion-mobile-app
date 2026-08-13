@@ -9,6 +9,7 @@ import 'package:operion_mobile/features/fleet/providers/fleet_providers.dart';
 import 'package:operion_mobile/features/fleet/screens/fleet_list_screen.dart';
 import 'package:operion_mobile/features/fleet/screens/truck_detail_screen.dart';
 import 'package:operion_mobile/shared/models/user.dart';
+import '../../helpers/golden_fonts.dart';
 
 const _adminUser = User(
   id: 'u2',
@@ -107,6 +108,7 @@ Future<void> _pumpGolden(
 }
 
 void main() {
+  setUpAll(loadGoldenFonts);
   testWidgets('FleetListScreen golden (light)', (tester) async {
     await _pumpGolden(tester, const FleetListScreen(), 'fleet_list_light.png');
   });

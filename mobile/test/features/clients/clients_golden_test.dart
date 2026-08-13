@@ -9,6 +9,7 @@ import 'package:operion_mobile/features/clients/providers/client_providers.dart'
 import 'package:operion_mobile/features/clients/screens/client_detail_screen.dart';
 import 'package:operion_mobile/features/clients/screens/client_list_screen.dart';
 import 'package:operion_mobile/shared/models/user.dart';
+import '../../helpers/golden_fonts.dart';
 
 const _adminUser = User(
   id: 'u2',
@@ -79,6 +80,7 @@ Future<void> _pumpGolden(
 }
 
 void main() {
+  setUpAll(loadGoldenFonts);
   testWidgets('ClientListScreen golden (light)', (tester) async {
     await _pumpGolden(tester, const ClientListScreen(), 'client_list_light.png');
   });

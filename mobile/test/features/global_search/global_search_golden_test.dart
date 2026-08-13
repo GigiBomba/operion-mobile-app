@@ -5,14 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:operion_mobile/core/i18n/app_localizations.dart';
 import 'package:operion_mobile/features/global_search/providers/global_search_providers.dart';
 import 'package:operion_mobile/features/global_search/screens/global_search_screen.dart';
+import '../../helpers/golden_fonts.dart';
 
-/// Dark-mode golden gap-fill (blueprint §9 item 7): GlobalSearchScreen
+/// Dark-mode golden gap-fill (blueprint Â§9 item 7): GlobalSearchScreen
 /// previously had NO golden. Fixed per-type results with "N more" totals,
-/// explicit Brightness, provider mocks — per the repo convention.
+/// explicit Brightness, provider mocks â€” per the repo convention.
 const _results = GlobalSearchResults(
   trips: SearchSection(items: [
-    {'id': 1, 'name': 'Trip #1042 — București → Cluj'},
-    {'id': 2, 'name': 'Trip #1015 — Brașov → Iași'},
+    {'id': 1, 'name': 'Trip #1042 â€” BucureÈ™ti â†’ Cluj'},
+    {'id': 2, 'name': 'Trip #1015 â€” BraÈ™ov â†’ IaÈ™i'},
   ], totalCount: 7),
   clients: SearchSection(items: [
     {'id': 'c1', 'name': 'ACME Logistics'},
@@ -51,6 +52,7 @@ Widget _app({Brightness brightness = Brightness.light}) {
 }
 
 void main() {
+  setUpAll(loadGoldenFonts);
   testWidgets('GlobalSearchScreen golden (light)', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
