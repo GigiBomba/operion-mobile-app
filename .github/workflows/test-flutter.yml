@@ -60,7 +60,17 @@ jobs:
       - name: Generate coverage report (lcov)
         run: |
           flutter test --coverage
+          sudo apt-get update
+          sudo apt-get install -y lcov
           genhtml coverage/lcov.info -o coverage/html
+
+      - name: Upload regenerated goldens (update-goldens run)
+        if: github.event.inputs.update_goldens == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: regenerated-goldens-${{ matrix.flutter-version }}
+          path: mobile/test/**/*.png
+          if-no-files-found: error
 
       - name: Upload test results
         if: always()
