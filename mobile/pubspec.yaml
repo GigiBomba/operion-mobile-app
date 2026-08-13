@@ -94,9 +94,18 @@ flutter:
   assets:
     - assets/images/
   fonts:
-    # Inter bundled locally (vs. fetched at runtime by google_fonts) so golden
-    # tests and offline builds render deterministic glyphs on every machine —
-    # CI runners cannot fetch Google Fonts during `flutter test`.
+    # Inter bundled locally as STATIC per-weight TTFs (vs. the variable font
+    # or runtime fetching by google_fonts) so golden tests render
+    # deterministic glyphs on every machine — CI runners cannot fetch Google
+    # Fonts during `flutter test`, and variable-font instance resolution
+    # (opsz/wght) differs between the Windows and Linux engines.
     - family: Inter
       fonts:
-        - asset: assets/fonts/Inter.ttf
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
