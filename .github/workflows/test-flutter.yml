@@ -21,15 +21,18 @@ jobs:
 
     strategy:
       matrix:
-        flutter-channel: ["stable"]
+        # Pinned to the local SDK that generated the goldens — golden
+        # pixels are Flutter-version-sensitive; bump together with a
+        # `flutter test --update-goldens` regeneration.
+        flutter-version: ["3.44.6"]
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Flutter ${{ matrix.flutter-channel }}
+      - name: Setup Flutter ${{ matrix.flutter-version }}
         uses: subosito/flutter-action@v2
         with:
-          channel: ${{ matrix.flutter-channel }}
+          flutter-version: ${{ matrix.flutter-version }}
           cache: true
 
       - name: Install dependencies
@@ -53,7 +56,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: flutter-test-results-${{ matrix.flutter-channel }}
+          name: flutter-test-results-${{ matrix.flutter-version }}
           path: mobile/test-results.json
           if-no-files-found: warn
 
@@ -61,7 +64,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: flutter-coverage-${{ matrix.flutter-channel }}
+          name: flutter-coverage-${{ matrix.flutter-version }}
           path: |
             mobile/coverage/
           if-no-files-found: warn
@@ -70,7 +73,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          echo "## Flutter ${{ matrix.flutter-channel }} coverage results" >> $GITHUB_STEP_SUMMARY
+          echo "## Flutter ${{ matrix.flutter-version }} coverage results" >> $GITHUB_STEP_SUMMARY
           if [ -f coverage/lcov.info ]; then
             LF=$(grep "^LF:" coverage/lcov.info | awk -F: '{s+=$2} END {print s}')
             LH=$(grep "^LH:" coverage/lcov.info | awk -F: '{s+=$2} END {print s}')
