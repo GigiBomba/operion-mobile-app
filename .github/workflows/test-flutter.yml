@@ -10,6 +10,12 @@ on:
       - "mobile/**"
       - ".github/workflows/test-flutter.yml"
   workflow_dispatch:
+    inputs:
+      update_goldens:
+        description: "Regenerate golden PNGs (--update-goldens) — commit the produced *-linux.png files"
+        required: false
+        default: "false"
+        type: boolean
 
 defaults:
   run:
@@ -43,7 +49,11 @@ jobs:
 
       - name: Run Flutter tests with coverage
         run: |
-          flutter test --coverage --machine > test-results.json
+          UPDATE_ARGS=""
+          if [ "${{ github.event.inputs.update_goldens }}" = "true" ]; then
+            UPDATE_ARGS="--update-goldens"
+          fi
+          flutter test --coverage $UPDATE_ARGS --machine > test-results.json
         env:
           CI: true
 
