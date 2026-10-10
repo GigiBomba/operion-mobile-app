@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -293,12 +296,41 @@ class LocalNotificationService {
     );
   }
 
-  /// Stable, collision-free positive notification id for [messageId].
-  static int notificationIdFor(String messageId) {
-    final hash = messageId.hashCode;
-    // Keep within the positive 32-bit range used by the plugin.
-    return hash & 0x7FFFFFFF;
+  /// Stable, collision-free positive notification id for [key].
+  ///
+  /// Replaces the old 32-bit `messageId.hashCode` scheme whose collisions
+  /// silently replaced unrelated notifications (Bug 5). A persisted monotonic
+  /// counter guarantees uniqueness, while the persisted key→id mapping
+  /// guarantees the SAME key always maps to the SAME id — so a snooze
+  /// re-show (keyed by alert id) replaces the original notification rather
+  /// than a different one.
+  ///
+  /// [key] must be the alert id on BOTH the show and the snooze-re-show
+  /// paths so the re-show targets the notification the user actually saw.
+  static Future<int> notificationIdFor(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    final rawMap = prefs.getString(_idMapStorageKey);
+    final idMap = rawMap == null
+        ? <String, int>{}
+        : (jsonDecode(rawMap) as Map<String, dynamic>)
+            .map((k, v) => MapEntry(k, (v as num).toInt()));
+
+    final existing = idMap[key];
+    if (existing != null) return existing;
+
+    final next = (prefs.getInt(_idCounterStorageKey) ?? 0) + 1;
+    final id = next & 0x7FFFFFFF;
+    idMap[key] = id;
+    await prefs.setString(_idMapStorageKey, jsonEncode(idMap));
+    await prefs.setInt(_idCounterStorageKey, id);
+    return id;
   }
+
+  /// SharedPreferences key for the persisted key→notification-id mapping.
+  static const String _idMapStorageKey = 'notification_id_map';
+
+  /// SharedPreferences key for the persisted notification-id counter.
+  static const String _idCounterStorageKey = 'notification_id_counter';
 
   /// JSON payload attached to every alert notification carrying the alert id.
   static String? jsonEncodePayload(String alertId) {

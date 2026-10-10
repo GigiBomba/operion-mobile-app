@@ -45,15 +45,15 @@ class _ModeRouterState extends ConsumerState<ModeRouter> {
 
     ref.read(authStateProvider.notifier).setAuthenticating();
 
-    final restored = await authService.restoreSession();
+    // restoreSession already fetches the user to validate the session, so we
+    // use that user directly instead of issuing a second `/me` request that
+    // could transiently fail and drop a valid restored session.
+    final user = await authService.restoreSession();
     if (!mounted) return;
 
-    if (restored) {
-      final user = await authService.getCurrentUser();
-      if (mounted) {
-        ref.read(currentUserProvider.notifier).state = user;
-        ref.read(authStateProvider.notifier).setAuthenticated();
-      }
+    if (user != null) {
+      ref.read(currentUserProvider.notifier).state = user;
+      ref.read(authStateProvider.notifier).setAuthenticated();
     } else {
       ref.read(authStateProvider.notifier).setUnauthenticated();
     }

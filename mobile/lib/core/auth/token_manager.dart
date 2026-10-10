@@ -1,5 +1,6 @@
 import '../network/endpoints/auth_endpoints.dart';
 import '../network/message_bus.dart';
+import '../network/token_refresher.dart';
 import '../storage/secure_token_store.dart';
 
 /// Manages JWT token lifecycle including secure storage persistence,
@@ -14,10 +15,22 @@ class TokenManager {
   final AuthEndpoints _endpoints;
   // ignore: unused_field
   final MessageBus _messageBus;
+  late final TokenRefresher _tokenRefresher;
 
   bool _hasTokens = false;
 
-  TokenManager(this._store, this._endpoints, this._messageBus);
+  TokenManager(
+    this._store,
+    this._endpoints,
+    this._messageBus, {
+    TokenRefresher? tokenRefresher,
+  }) {
+    _tokenRefresher = tokenRefresher ??
+        TokenRefresher(
+          getRefreshToken: () => _store.getRefreshToken(),
+          saveTokens: (access, refresh) => saveTokens(access, refresh),
+        );
+  }
 
   /// Loads the token-presence flag from secure storage.
   ///
@@ -53,27 +66,15 @@ class TokenManager {
 
   /// Attempts to exchange the current refresh token for a new token pair.
   ///
+  /// Uses the shared single-flight [TokenRefresher] so a refresh triggered
+  /// here and one triggered by the auth interceptor never race each other
+  /// with the same (rotating) refresh token.
+  ///
   /// Returns `true` if a new access token was obtained and persisted,
-  /// `false` otherwise (e.g. refresh token expired or network error).
+  /// `false` otherwise (e.g. refresh token rejected or transient error).
   Future<bool> tryRefresh() async {
-    final refreshToken = await getRefreshToken();
-    if (refreshToken == null || refreshToken.isEmpty) return false;
-
-    try {
-      final response = await _endpoints.refreshToken(refreshToken);
-      final data = response.data as Map<String, dynamic>;
-
-      final newAccess = data['accessToken'] as String?;
-      final newRefresh = data['refreshToken'] as String?;
-
-      if (newAccess != null) {
-        await saveTokens(newAccess, newRefresh ?? refreshToken);
-        return true;
-      }
-      return false;
-    } catch (_) {
-      return false;
-    }
+    final result = await _tokenRefresher.refresh(_endpoints.refreshToken);
+    return result.outcome == TokenRefreshOutcome.success;
   }
 
   /// Whether the manager currently believes a valid session exists.

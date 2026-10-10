@@ -3,17 +3,25 @@ import 'dart:developer' as developer;
 
 import 'package:dio/dio.dart';
 
+import 'endpoints/auth_endpoints.dart';
+import 'token_refresher.dart';
+
 /// Interceptor that attaches an Authorization header to every request and
 /// handles 401 responses by attempting a token refresh.
 ///
-/// When a 401 is received:
-/// 1. The refresh token is fetched via [getRefreshToken].
-/// 2. A POST is made to `/api/v1/auth/refresh` with that token.
-/// 3. The new tokens are persisted via [saveTokens].
-/// 4. The original request is retried with the new access token.
+/// When a 401 is received on a protected endpoint:
+/// 1. The refresh token is exchanged for a new pair via the shared
+///    [TokenRefresher] (single-flight across the whole app).
+/// 2. The new tokens are persisted.
+/// 3. The original request is retried with the new access token.
 ///
-/// If the refresh itself fails, [clearTokens] and [onForceLogout] are called,
-/// and the original error is forwarded.
+/// Only a definitive rejection of the refresh token (HTTP 400/401/403)
+/// triggers [clearTokens] and [onForceLogout]. Transient failures (no
+/// network, timeout, 5xx) forward the original error and keep the tokens so a
+/// driver in a dead zone is never logged out.
+///
+/// 401s on public endpoints (login, refresh, forgot-password) are plain auth
+/// failures and never enter the refresh/retry flow.
 class AuthInterceptor extends QueuedInterceptor {
   final Future<String?> Function() getAccessToken;
   final Future<String?> Function()? getRefreshToken;
@@ -21,10 +29,19 @@ class AuthInterceptor extends QueuedInterceptor {
   final Future<void> Function()? clearTokens;
   final VoidCallback? onForceLogout;
 
-  /// Endpoints that should never carry an Authorization header.
+  /// Optional shared [TokenRefresher]. When omitted the interceptor builds
+  /// its own; the refresher's mutex is process-wide so every instance still
+  /// shares a single in-flight refresh request.
+  final TokenRefresher? tokenRefresher;
+
+  TokenRefresher? _defaultRefresher;
+
+  /// Endpoints that never carry an Authorization header and whose 401s must
+  /// never trigger the refresh/force-logout machinery.
   static const _publicEndpoints = <String>{
-    '/api/v1/auth/token',
-    '/api/v1/auth/refresh',
+    AuthEndpoints.loginPath,
+    AuthEndpoints.refreshPath,
+    '/api/v1/auth/forgot-password',
   };
 
   AuthInterceptor({
@@ -33,7 +50,19 @@ class AuthInterceptor extends QueuedInterceptor {
     this.saveTokens,
     this.clearTokens,
     this.onForceLogout,
+    this.tokenRefresher,
   });
+
+  /// The [TokenRefresher] to use — injected, or lazily created from this
+  /// interceptor's callbacks (only reached once both are non-null).
+  TokenRefresher get _refresher {
+    final injected = tokenRefresher;
+    if (injected != null) return injected;
+    return _defaultRefresher ??= TokenRefresher(
+      getRefreshToken: getRefreshToken!,
+      saveTokens: saveTokens!,
+    );
+  }
 
   /// Whether [path] is a public endpoint that does not require auth.
   bool _isPublic(String path) {
@@ -70,60 +99,67 @@ class AuthInterceptor extends QueuedInterceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    // Only attempt refresh on 401 and when a refresh-token callback is provided.
+    // Only attempt refresh on 401 and when a refresh-token callback is
+    // provided.
     if (err.response?.statusCode != 401 ||
         getRefreshToken == null ||
         saveTokens == null) {
       return handler.next(err);
     }
 
-    // Don't retry if the failing request was itself the refresh call.
+    // Public endpoints (login, refresh, forgot-password, ...) never enter the
+    // refresh/retry flow. A 401 from the login endpoint is a plain auth
+    // failure (e.g. wrong password) — not a session to refresh — and must not
+    // flash the session-expired screen or loop the login screen.
     final path = _normalisePath(err.requestOptions.path);
-    if (path.endsWith('/api/v1/auth/refresh')) {
+    if (_isPublic(path)) {
       return handler.next(err);
     }
 
-    try {
-      final refreshToken = await getRefreshToken?.call();
-      if (refreshToken == null || refreshToken.isEmpty) {
-        return _forceLogout(err, handler);
-      }
+    final result = await _refresher.refresh(
+      (refreshToken) => _postRefresh(err.requestOptions.baseUrl, refreshToken),
+    );
 
-      // Attempt token refresh
-      final refreshDio = Dio(BaseOptions(
-        baseUrl: err.requestOptions.baseUrl,
-        headers: {'Content-Type': 'application/json'},
-      ));
-      final refreshResponse = await refreshDio.post(
-        '/api/v1/auth/refresh',
-        data: {'refresh_token': refreshToken},
-      );
+    switch (result.outcome) {
+      case TokenRefreshOutcome.success:
+        final newAccess = result.accessToken!;
 
-      if (refreshResponse.statusCode == 200) {
-        final data = refreshResponse.data is Map<String, dynamic>
-            ? refreshResponse.data as Map<String, dynamic>
-            : <String, dynamic>{};
-        final newAccess = data['access_token'] as String?;
-        final newRefresh = data['refresh_token'] as String?;
-
-        if (newAccess != null) {
-          await saveTokens!(newAccess, newRefresh ?? refreshToken);
-
-          // Retry the original request with the new token
-          err.requestOptions.headers['Authorization'] = 'Bearer $newAccess';
-          final response = await Dio(BaseOptions(
-            baseUrl: err.requestOptions.baseUrl,
-          )).fetch(err.requestOptions);
+        // Retry the original request with the new token.
+        err.requestOptions.headers['Authorization'] = 'Bearer $newAccess';
+        try {
+          final response = await Dio(
+            BaseOptions(baseUrl: err.requestOptions.baseUrl),
+          ).fetch(err.requestOptions);
           return handler.resolve(response);
+        } catch (retryErr) {
+          developer.log(
+            'AuthInterceptor: retry failed – $retryErr',
+            name: 'AuthInterceptor',
+          );
+          return handler.next(retryErr is DioException ? retryErr : err);
         }
-      }
 
-      // Refresh response was not 200 – force logout
-      return _forceLogout(err, handler);
-    } catch (e) {
-      developer.log('AuthInterceptor: refresh failed – $e', name: 'AuthInterceptor');
-      return _forceLogout(err, handler);
+      case TokenRefreshOutcome.rejected:
+        // The refresh token itself was rejected — the session is over.
+        return _forceLogout(err, handler);
+
+      case TokenRefreshOutcome.transientError:
+        // Transient failure during refresh (network, timeout, 5xx): keep the
+        // tokens and surface the original error. The driver must not be
+        // logged out for a dead zone.
+        return handler.next(err);
     }
+  }
+
+  Future<Response> _postRefresh(String baseUrl, String refreshToken) {
+    final refreshDio = Dio(BaseOptions(
+      baseUrl: baseUrl,
+      headers: {'Content-Type': 'application/json'},
+    ));
+    return refreshDio.post(
+      AuthEndpoints.refreshPath,
+      data: {'refresh_token': refreshToken},
+    );
   }
 
   void _forceLogout(

@@ -30,6 +30,15 @@ class LocalDatabase {
   /// In-memory cache: `collection -> key -> JSON string`.
   final _cache = <String, Map<String, String>>{};
 
+  /// Collections that have already been loaded from disk in this process.
+  ///
+  /// Guards [_loadCollection] so a collection file is read only ONCE; all
+  /// subsequent mutations merge into the in-memory map and are persisted by
+  /// [_persistCollection]. Re-reading on every call was a lost-update race:
+  /// interleaved async operations could reload a stale file and clobber
+  /// unsaved in-memory entries.
+  final _loadedCollections = <String>{};
+
   /// Whether the database has been initialised.
   bool _initialized = false;
 
@@ -38,7 +47,7 @@ class LocalDatabase {
   /// Open (or create) the local database directory.
   ///
   /// The database files are stored in the app's documents directory under
-  /// `operion_cache/`.
+  /// `operion_cache/`. Idempotent — safe to call more than once.
   Future<void> initialize() async {
     if (_initialized) return;
 
@@ -53,10 +62,21 @@ class LocalDatabase {
         name: 'LocalDatabase');
   }
 
+  /// Defensive bootstrap guard: every public operation lazily initialises the
+  /// database when `initialize()` was never called explicitly (e.g. a provider
+  /// is read before [AppServices] finished bootstrapping). Without this every
+  /// read/write threw `StateError('LocalDatabase not initialised')`.
+  Future<void> _ensureInitialized() async {
+    if (!_initialized) {
+      await initialize();
+    }
+  }
+
   // ── Transport caching ─────────────────────────
 
   /// Replace the entire transports cache with the provided list.
   Future<void> cacheTransports(List<Map<String, dynamic>> transports) async {
+    await _ensureInitialized();
     await clearCollection('transports');
     for (final t in transports) {
       final id = t['id']?.toString() ?? _fallbackId(t);
@@ -66,6 +86,7 @@ class LocalDatabase {
 
   /// Retrieve all cached transports as a list of maps.
   Future<List<Map<String, dynamic>>> getCachedTransports() async {
+    await _ensureInitialized();
     final items = await _getAllFromCollection('transports');
     return items;
   }
@@ -74,6 +95,7 @@ class LocalDatabase {
 
   /// Replace the entire fleet cache with the provided list.
   Future<void> cacheFleet(List<Map<String, dynamic>> trucks) async {
+    await _ensureInitialized();
     await clearCollection('fleet');
     for (final t in trucks) {
       final id = t['id']?.toString() ?? _fallbackId(t);
@@ -82,11 +104,14 @@ class LocalDatabase {
   }
 
   /// Retrieve all cached fleet trucks as a list of maps.
-  Future<List<Map<String, dynamic>>> getCachedFleet() =>
-      _getAllFromCollection('fleet');
+  Future<List<Map<String, dynamic>>> getCachedFleet() async {
+    await _ensureInitialized();
+    return _getAllFromCollection('fleet');
+  }
 
   /// Replace the entire drivers cache with the provided list.
   Future<void> cacheDrivers(List<Map<String, dynamic>> drivers) async {
+    await _ensureInitialized();
     await clearCollection('drivers');
     for (final d in drivers) {
       final id = d['id']?.toString() ?? _fallbackId(d);
@@ -95,11 +120,14 @@ class LocalDatabase {
   }
 
   /// Retrieve all cached drivers as a list of maps.
-  Future<List<Map<String, dynamic>>> getCachedDrivers() =>
-      _getAllFromCollection('drivers');
+  Future<List<Map<String, dynamic>>> getCachedDrivers() async {
+    await _ensureInitialized();
+    return _getAllFromCollection('drivers');
+  }
 
   /// Replace the entire clients cache with the provided list.
   Future<void> cacheClients(List<Map<String, dynamic>> clients) async {
+    await _ensureInitialized();
     await clearCollection('clients');
     for (final c in clients) {
       final id = c['id']?.toString() ?? _fallbackId(c);
@@ -108,13 +136,16 @@ class LocalDatabase {
   }
 
   /// Retrieve all cached clients as a list of maps.
-  Future<List<Map<String, dynamic>>> getCachedClients() =>
-      _getAllFromCollection('clients');
+  Future<List<Map<String, dynamic>>> getCachedClients() async {
+    await _ensureInitialized();
+    return _getAllFromCollection('clients');
+  }
 
   // ── Invoices caching (Phase 3B, §4.5) ──────────────────────────────
 
   /// Replace the entire invoices cache with the provided list.
   Future<void> cacheInvoices(List<Map<String, dynamic>> invoices) async {
+    await _ensureInitialized();
     await clearCollection('invoices');
     for (final i in invoices) {
       final id = i['id']?.toString() ?? _fallbackId(i);
@@ -123,13 +154,16 @@ class LocalDatabase {
   }
 
   /// Retrieve all cached invoices as a list of maps.
-  Future<List<Map<String, dynamic>>> getCachedInvoices() =>
-      _getAllFromCollection('invoices');
+  Future<List<Map<String, dynamic>>> getCachedInvoices() async {
+    await _ensureInitialized();
+    return _getAllFromCollection('invoices');
+  }
 
   // ── Team members caching (Phase 4B, §4.9) ───────────────────────────
 
   /// Replace the entire team cache with the provided list.
   Future<void> cacheTeamMembers(List<Map<String, dynamic>> members) async {
+    await _ensureInitialized();
     await clearCollection('team');
     for (final m in members) {
       final id = m['id']?.toString() ?? _fallbackId(m);
@@ -138,8 +172,10 @@ class LocalDatabase {
   }
 
   /// Retrieve all cached team members as a list of maps.
-  Future<List<Map<String, dynamic>>> getCachedTeamMembers() =>
-      _getAllFromCollection('team');
+  Future<List<Map<String, dynamic>>> getCachedTeamMembers() async {
+    await _ensureInitialized();
+    return _getAllFromCollection('team');
+  }
 
   // ── Generic key-value cache ───────────────────
 
@@ -149,6 +185,7 @@ class LocalDatabase {
     String key,
     Map<String, dynamic> data,
   ) async {
+    await _ensureInitialized();
     _ensureCollection(collection);
     _cache[collection]![key] = jsonEncode(data);
     await _persistCollection(collection);
@@ -159,6 +196,7 @@ class LocalDatabase {
     String collection,
     String key,
   ) async {
+    await _ensureInitialized();
     _ensureCollection(collection);
     final raw = _cache[collection]![key];
     if (raw == null) return null;
@@ -168,6 +206,7 @@ class LocalDatabase {
 
   /// Remove all entries belonging to [collection].
   Future<void> clearCollection(String collection) async {
+    await _ensureInitialized();
     _cache.remove(collection);
     final file = _collectionFile(collection);
     if (await file.exists()) {
@@ -185,6 +224,7 @@ class LocalDatabase {
   /// This is the equivalent of `getCachedData(namespace, key)` but accepts
   /// arbitrary JSON values (lists, primitives, etc.) not only maps.
   Future<dynamic> read(String key, {String namespace = 'default'}) async {
+    await _ensureInitialized();
     await _loadCollection(namespace);
     _ensureCollection(namespace);
     final raw = _cache[namespace]![key];
@@ -209,6 +249,7 @@ class LocalDatabase {
     dynamic value, {
     String namespace = 'default',
   }) async {
+    await _ensureInitialized();
     await _loadCollection(namespace);
     _ensureCollection(namespace);
     _cache[namespace]![key] = jsonEncode(value);
@@ -219,6 +260,7 @@ class LocalDatabase {
   ///
   /// No-op if the key does not exist.
   Future<void> delete(String key, {String namespace = 'default'}) async {
+    await _ensureInitialized();
     await _loadCollection(namespace);
     if (_cache.containsKey(namespace)) {
       _cache[namespace]!.remove(key);
@@ -233,6 +275,7 @@ class LocalDatabase {
     String prefix, {
     String namespace = 'default',
   }) async {
+    await _ensureInitialized();
     await _loadCollection(namespace);
     _ensureCollection(namespace);
     return _cache[namespace]!
@@ -246,6 +289,7 @@ class LocalDatabase {
     String prefix, {
     String namespace = 'default',
   }) async {
+    await _ensureInitialized();
     await _loadCollection(namespace);
     if (!_cache.containsKey(namespace)) return;
     _cache[namespace]!.removeWhere((k, _) => k.startsWith(prefix));
@@ -255,6 +299,8 @@ class LocalDatabase {
   /// Close the database and release resources.
   Future<void> close() async {
     _cache.clear();
+    _loadedCollections.clear();
+    _baseDir = null;
     _initialized = false;
     developer.log('LocalDatabase closed', name: 'LocalDatabase');
   }
@@ -282,8 +328,18 @@ class LocalDatabase {
     await file.writeAsString(jsonEncode(entries));
   }
 
-  /// Load a collection from disk into the in-memory cache.
+  /// Load a collection from disk into the in-memory cache — but only the
+  /// FIRST time it is accessed in this process.
+  ///
+  /// Every later read/write/delete operates on the in-memory map (persisted
+  /// via [_persistCollection]), so an interleaved async reload can never
+  /// clobber unsaved in-memory entries.
   Future<void> _loadCollection(String collection) async {
+    if (_loadedCollections.contains(collection)) return;
+    // Mark loaded BEFORE the first await so two interleaved callers cannot
+    // both decide to (re)read the file.
+    _loadedCollections.add(collection);
+
     final file = _collectionFile(collection);
     if (await file.exists()) {
       try {
@@ -306,6 +362,7 @@ class LocalDatabase {
   Future<List<Map<String, dynamic>>> _getAllFromCollection(
     String collection,
   ) async {
+    await _ensureInitialized();
     await _loadCollection(collection);
     final entries = _cache[collection] ?? <String, String>{};
     return entries.values

@@ -8,6 +8,7 @@ import '../constants.dart';
 import '../network/api_client.dart';
 import '../network/endpoints/auth_endpoints.dart';
 import '../network/message_bus.dart';
+import '../network/token_refresher.dart';
 import '../security/biometric_gate.dart';
 import '../storage/secure_token_store.dart';
 import '../sync/connectivity_monitor.dart';
@@ -59,6 +60,20 @@ final authEndpointsProvider = Provider<AuthEndpoints>((ref) {
   return AuthEndpoints(ref.read(apiClientProvider));
 });
 
+/// Shared single-flight [TokenRefresher] used by both the auth interceptor
+/// and [TokenManager].
+///
+/// The interceptor is constructed inside [ApiClient] and cannot receive this
+/// instance directly, but the refresher's in-flight mutex is process-wide, so
+/// every instance still shares a single refresh request per attempt.
+final tokenRefresherProvider = Provider<TokenRefresher>((ref) {
+  final store = ref.read(secureTokenStoreProvider);
+  return TokenRefresher(
+    getRefreshToken: () => store.getRefreshToken(),
+    saveTokens: (access, refresh) => store.saveTokens(access, refresh),
+  );
+});
+
 // ---------------------------------------------------------------------------
 // Auth service providers
 // ---------------------------------------------------------------------------
@@ -72,6 +87,7 @@ final tokenManagerProvider = Provider<TokenManager>((ref) {
     ref.read(secureTokenStoreProvider),
     ref.read(authEndpointsProvider),
     ref.read(messageBusProvider),
+    tokenRefresher: ref.read(tokenRefresherProvider),
   );
   // Fire-and-forget: populates the in-memory `_hasTokens` flag.
   manager.initialize();

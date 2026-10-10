@@ -104,6 +104,20 @@ class NotificationDedupeStore {
     }
     await prefs.setStringList(storageKey, updated);
   }
+
+  /// Releases the claim on [messageId] (no-op when not claimed).
+  ///
+  /// Used when a claimed message fails to display, so a later delivery of the
+  /// same message is not permanently suppressed.
+  Future<void> unclaim(String messageId) async {
+    final prefs = await _prefs();
+    final ids = prefs.getStringList(storageKey) ?? const [];
+    if (!ids.contains(messageId)) return;
+    await prefs.setStringList(
+      storageKey,
+      ids.where((id) => id != messageId).toList(),
+    );
+  }
 }
 
 // ── Action handler ──────────────────────────────────────────────────────
@@ -137,6 +151,10 @@ class NotificationActionHandler {
   final NotificationActionStore actionStore;
   final NotificationDedupeStore dedupeStore;
 
+  /// In-flight guard for [executePendingActions]: prevents two concurrent
+  /// drains from double-executing the same intent (Bug 3).
+  bool _executing = false;
+
   /// Displays an alert-type FCM data message as a rich local notification.
   ///
   /// Safe to call from the background isolate — it only touches the local
@@ -159,15 +177,24 @@ class NotificationActionHandler {
         );
         return false;
       }
-      await localNotifications.showAlertNotification(
-        id: LocalNotificationService.notificationIdFor(alert.messageId),
-        title: alert.title,
-        body: alert.body,
-        alertId: alert.alertId,
-        approveLabel: loc?.notification_approve ?? 'Approve',
-        snoozeLabel: loc?.notification_snooze ?? 'Snooze',
-        viewLabel: loc?.notification_view ?? 'View',
-      );
+      try {
+        await localNotifications.showAlertNotification(
+          // Keyed by alert id (NOT message id) so the snooze re-show
+          // targets the same notification (Bug 5).
+          id: await LocalNotificationService.notificationIdFor(alert.alertId),
+          title: alert.title,
+          body: alert.body,
+          alertId: alert.alertId,
+          approveLabel: loc?.notification_approve ?? 'Approve',
+          snoozeLabel: loc?.notification_snooze ?? 'Snooze',
+          viewLabel: loc?.notification_view ?? 'View',
+        );
+      } catch (e) {
+        // The claim was made BEFORE the show: release it so a failed
+        // display is not permanently suppressed (Bug 4).
+        await dedupeStore.unclaim(alert.messageId);
+        rethrow;
+      }
       developer.log(
         'Notifications: showed alert ${alert.alertId} (${alert.messageId})',
         name: 'Notifications',
@@ -196,7 +223,10 @@ class NotificationActionHandler {
   /// MAIN isolate: user tapped a notification or one of its actions.
   ///
   /// Persists the intent first (so a crash/termination never loses it), then
-  /// executes immediately when the session is authenticated.
+  /// executes ONLY the intent just appended through the authenticated flow.
+  /// Draining the whole queue here is deliberately avoided: a concurrent
+  /// drain (e.g. the auth-transition subscription in AppServices) could
+  /// double-execute the same approve action (Bug 3).
   Future<void> handleResponse(
     NotificationResponse response,
     ProviderContainer container,
@@ -210,8 +240,35 @@ class NotificationActionHandler {
       alertId: alertId,
       createdAt: DateTime.now(),
     );
+
+    // Dedupe by (type, alertId): skip when an identical intent is already
+    // pending (e.g. queued from a background tap) so the same action is
+    // never executed twice.
+    final pending = await actionStore.loadPending();
+    final duplicate = pending.any(
+      (i) => i.type == intent.type && i.alertId == intent.alertId,
+    );
+    if (duplicate) {
+      developer.log(
+        'Notifications: duplicate ${type.id} intent for alert '
+        '$alertId skipped',
+        name: 'Notifications',
+      );
+      return;
+    }
+
     await actionStore.append(intent);
-    await executePendingActions(container);
+    final executed = await _executeIntent(container, intent);
+    if (executed) {
+      final current = await actionStore.loadPending();
+      await actionStore.replaceAll(
+        current
+            .where(
+              (i) => !(i.type == intent.type && i.alertId == intent.alertId),
+            )
+            .toList(),
+      );
+    }
   }
 
   /// BACKGROUND isolate: user tapped an action while the app is not running.
@@ -248,52 +305,87 @@ class NotificationActionHandler {
   /// from the main isolate, removing it on success. Intents stay queued when
   /// the user is not authenticated — they are retried on the next launch
   /// (terminated-state limitation).
+  ///
+  /// Reentrancy guard: a second call while a drain is in flight is skipped
+  /// (the queued intents are picked up by the running drain or the next
+  /// trigger) so the same approve action is never executed twice (Bug 3).
   Future<void> executePendingActions(ProviderContainer container) async {
-    final pending = await actionStore.loadPending();
-    if (pending.isEmpty) return;
+    if (_executing) return;
+    _executing = true;
+    try {
+      final pending = await actionStore.loadPending();
+      if (pending.isEmpty) return;
 
+      final authenticated = container.read(authStateProvider) ==
+              AuthState.authenticated &&
+          container.read(currentUserProvider) != null;
+
+      if (!authenticated) return;
+
+      final executed = <NotificationActionIntent>[];
+      for (final intent in pending) {
+        if (await _executeIntent(container, intent)) {
+          executed.add(intent);
+        }
+      }
+      if (executed.isNotEmpty) {
+        final remaining =
+            pending.where((i) => !executed.contains(i)).toList();
+        await actionStore.replaceAll(remaining);
+      }
+    } finally {
+      _executing = false;
+    }
+  }
+
+  /// Executes a single [intent] through the authenticated flow.
+  ///
+  /// Returns `true` when the intent was fulfilled (and may be removed from
+  /// the persisted queue). Unauthenticated sessions always return `false` so
+  /// the intent stays queued for the next authenticated launch.
+  Future<bool> _executeIntent(
+    ProviderContainer container,
+    NotificationActionIntent intent,
+  ) async {
     final authenticated = container.read(authStateProvider) ==
             AuthState.authenticated &&
         container.read(currentUserProvider) != null;
+    if (!authenticated) return false;
 
-    if (!authenticated) return;
-
-    final executed = <NotificationActionIntent>[];
-    for (final intent in pending) {
-      try {
-        switch (intent.type) {
-          case NotificationActionType.approve:
-            // Same mutation the in-app ApprovalDetailScreen uses.
-            final endpoints = container.read(dispatcherEndpointsProvider);
-            await endpoints.approveAction(intent.alertId);
-            // Job/alert event → refresh the home-screen widget (trigger c).
-            unawaited(WidgetDataService().refreshOverview(container));
-            executed.add(intent);
-          case NotificationActionType.snooze:
-            await localNotifications.scheduleSnoozeReShow(
-              id: LocalNotificationService.notificationIdFor(intent.alertId),
-              title: intent.title ?? 'Operion Alert',
-              body: intent.body ?? '',
-              alertId: intent.alertId,
-            );
-            executed.add(intent);
-          case NotificationActionType.view:
-          case NotificationActionType.tap:
-            // showsUserInterface:true — navigate to the alert detail.
-            _navigateToAlertDetail(container, intent.alertId);
-            executed.add(intent);
-        }
-      } catch (e) {
-        // Network/auth failures keep the intent queued for the next launch.
-        developer.log(
-          'Notifications: action ${intent.type.id} failed → $e',
-          name: 'Notifications',
-        );
+    try {
+      switch (intent.type) {
+        case NotificationActionType.approve:
+          // Same mutation the in-app ApprovalDetailScreen uses.
+          final endpoints = container.read(dispatcherEndpointsProvider);
+          await endpoints.approveAction(intent.alertId);
+          // Job/alert event → refresh the home-screen widget (trigger c).
+          unawaited(WidgetDataService().refreshOverview(container));
+          return true;
+        case NotificationActionType.snooze:
+          await localNotifications.scheduleSnoozeReShow(
+            // Same key as the show path (alert id) so the re-show replaces
+            // the notification the user actually saw (Bug 5).
+            id: await LocalNotificationService.notificationIdFor(
+              intent.alertId,
+            ),
+            title: intent.title ?? 'Operion Alert',
+            body: intent.body ?? '',
+            alertId: intent.alertId,
+          );
+          return true;
+        case NotificationActionType.view:
+        case NotificationActionType.tap:
+          // showsUserInterface:true — navigate to the alert detail.
+          _navigateToAlertDetail(container, intent.alertId);
+          return true;
       }
-    }
-    if (executed.isNotEmpty) {
-      final remaining = pending.where((i) => !executed.contains(i)).toList();
-      await actionStore.replaceAll(remaining);
+    } catch (e) {
+      // Network/auth failures keep the intent queued for the next launch.
+      developer.log(
+        'Notifications: action ${intent.type.id} failed → $e',
+        name: 'Notifications',
+      );
+      return false;
     }
   }
 

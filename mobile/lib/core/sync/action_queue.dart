@@ -198,6 +198,28 @@ class ActionQueue {
 
   bool _isReplaying = false;
 
+  /// Set when [replayAll] is invoked while a replay is already running.
+  ///
+  /// The running cycle checks this flag when it finishes and runs another
+  /// cycle (after an exponential backoff), so actions enqueued mid-replay are
+  /// drained instead of being stranded. Previously the request was silently
+  /// dropped (`return 0`) and those actions were never replayed.
+  bool _replayRequested = false;
+
+  /// True once persisted actions have been loaded — makes [initialize]
+  /// idempotent and prevents a second call from clobbering in-memory actions.
+  bool _initialized = false;
+
+  /// Maximum consecutive transient failures before an action is dropped and
+  /// surfaced via [ActionQueueState.lastError] as a permanent failure.
+  ///
+  /// Private so `implements ActionQueue` test fakes keep compiling; configured
+  /// through the constructor's `maxRetryCount` parameter.
+  final int _maxRetryCount;
+
+  /// Base delay for the exponential backoff between replay cycles.
+  final Duration _backoffBase;
+
   /// Broadcast stream that emits the latest [ActionQueueState] whenever the
   /// queue changes (enqueue, dequeue, replay start/end, error).
   Stream<ActionQueueState> get state => _stateController.stream;
@@ -212,12 +234,20 @@ class ActionQueue {
   bool _isStale(QueuedAction action) =>
       DateTime.now().difference(action.createdAt) > kActionQueueTtl;
 
-  ActionQueue(this._db);
+  ActionQueue(
+    this._db, {
+    int maxRetryCount = 5,
+    Duration backoffBase = const Duration(seconds: 2),
+  })  : _maxRetryCount = maxRetryCount, // ignore: prefer_initializing_formals
+        _backoffBase = backoffBase; // ignore: prefer_initializing_formals
 
   /// Loads pending actions from persistent storage.
   ///
   /// Must be called once before using the queue.
   Future<void> initialize() async {
+    if (_initialized) return;
+    _initialized = true;
+
     try {
       // Remove any stale isReplaying flag from a previous crash.
       await _db.write('_meta_is_replaying', false, namespace: _namespace);
@@ -304,14 +334,49 @@ class ActionQueue {
   Future<int> replayAll(
     Future<dynamic> Function(QueuedAction action) executor,
   ) async {
-    if (_isReplaying) return 0;
+    // A replay is already running: remember the request so another cycle runs
+    // once the current one finishes. (Previously this returned 0 and silently
+    // dropped the request, stranding actions enqueued meanwhile.)
+    if (_isReplaying) {
+      _replayRequested = true;
+      return 0;
+    }
 
     _isReplaying = true;
     await _db.write('_meta_is_replaying', true, namespace: _namespace);
     _emitState();
 
+    var totalSuccess = 0;
+    var cycle = 0;
+    try {
+      do {
+        cycle++;
+        _replayRequested = false;
+        totalSuccess += await _replayOnce(executor);
+
+        // A replay was requested mid-run and new actions are queued → run
+        // another cycle after an exponential backoff.
+        if (_replayRequested && _pending.isNotEmpty) {
+          await Future<void>.delayed(_backoffDelay(cycle));
+        }
+      } while (_replayRequested && _pending.isNotEmpty);
+    } finally {
+      _isReplaying = false;
+      await _db.write('_meta_is_replaying', false, namespace: _namespace);
+      _emitState();
+    }
+
+    return totalSuccess;
+  }
+
+  /// Executes one FIFO pass over the current pending actions.
+  ///
+  /// Works on a snapshot so concurrent enqueues do not interfere; actions
+  /// enqueued during a pass are picked up by the next replay cycle.
+  Future<int> _replayOnce(
+    Future<dynamic> Function(QueuedAction action) executor,
+  ) async {
     var successCount = 0;
-    // Work on a copy so concurrent enqueues do not interfere.
     final snapshot = List<QueuedAction>.from(_pending);
 
     for (final action in snapshot) {
@@ -339,6 +404,23 @@ class ActionQueue {
       } catch (e) {
         // Transient failure – keep in queue, update retry count.
         final updated = action.copyWith(retryCount: action.retryCount + 1);
+
+        // Max-retry enforcement: drop the action permanently instead of
+        // retrying forever, surfacing the failure via lastError.
+        if (updated.retryCount >= _maxRetryCount) {
+          developer.log(
+            'ActionQueue: giving up on $action after $_maxRetryCount '
+            'retries → $e',
+            name: 'ActionQueue',
+          );
+          await dequeue(action.id);
+          _emitError(
+            'Action ${action.id} permanently failed after '
+            '$_maxRetryCount retries: $e',
+          );
+          continue;
+        }
+
         final index = _pending.indexWhere((a) => a.id == action.id);
         if (index != -1) {
           _pending[index] = updated;
@@ -352,11 +434,17 @@ class ActionQueue {
       }
     }
 
-    _isReplaying = false;
-    await _db.write('_meta_is_replaying', false, namespace: _namespace);
-    _emitState();
-
     return successCount;
+  }
+
+  /// Exponential backoff between replay cycles: 2s, 4s, 8s, … capped at 60s
+  /// (scaled by [_backoffBase]).
+  Duration _backoffDelay(int cycle) {
+    final exponent = (cycle.clamp(1, 6) - 1).toInt();
+    final delay = _backoffBase * (1 << exponent);
+    return delay > const Duration(seconds: 60)
+        ? const Duration(seconds: 60)
+        : delay;
   }
 
   /// Removes all pending actions without replaying them.
@@ -433,7 +521,13 @@ final actionQueueProvider = Provider<ActionQueue>((ref) {
   return queue;
 });
 
-/// Placeholder provider – override in your app with the real [LocalDatabase].
+/// Provides the singleton [LocalDatabase].
+///
+/// The returned instance is defensively self-initialising: every public method
+/// lazily calls [LocalDatabase.initialize] when it hasn't run yet, so reading
+/// this provider before bootstrap no longer yields an uninitialised database
+/// whose reads/writes throw `StateError`. [AppServices] still calls
+/// `initialize()` explicitly at startup to keep the first write fast.
 final localDatabaseProvider = Provider<LocalDatabase>((ref) {
   return LocalDatabase();
 });

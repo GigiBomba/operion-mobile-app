@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 import 'auth_interceptor.dart';
@@ -11,6 +12,90 @@ const Uuid _uuid = Uuid();
 /// `IdempotencyMiddleware` caches the response for 24h and replays it when
 /// the same key is submitted again, preventing duplicate processing.
 String generateIdempotencyKey() => _uuid.v4();
+
+/// [LogInterceptor] that redacts credentials before anything is printed.
+///
+/// Debug/profile builds log request/response bodies for diagnostics, but the
+/// login payload carries the plaintext password and every request carries the
+/// `X-API-Key` header — neither may ever reach the console. This interceptor
+/// strips sensitive headers and masks password-like body fields on a COPY of
+/// the request/response before delegating to the stock [LogInterceptor].
+class RedactingLogInterceptor extends LogInterceptor {
+  RedactingLogInterceptor()
+      : super(requestBody: true, responseBody: true);
+
+  /// Header names whose values are never logged.
+  static const Set<String> _sensitiveHeaders = {
+    'Authorization',
+    'X-API-Key',
+    'Proxy-Authorization',
+    'Cookie',
+    'Set-Cookie',
+  };
+
+  /// Body keys (case-insensitive) whose values are masked.
+  static final RegExp _sensitiveBodyKey = RegExp(
+    r'password|passwd|pwd|secret|refresh_token|access_token',
+    caseSensitive: false,
+  );
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    final redacted = options.copyWith(
+      headers: redactHeaders(options.headers),
+      data: redactBody(options.data),
+    );
+    super.onRequest(redacted, handler);
+  }
+
+  @override
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
+    final redacted = Response(
+      data: redactBody(response.data),
+      requestOptions: response.requestOptions.copyWith(
+        headers: redactHeaders(response.requestOptions.headers),
+        data: redactBody(response.requestOptions.data),
+      ),
+      statusCode: response.statusCode,
+      statusMessage: response.statusMessage,
+      isRedirect: response.isRedirect,
+      redirects: response.redirects,
+      extra: response.extra,
+      headers: response.headers,
+    );
+    super.onResponse(redacted, handler);
+  }
+
+  /// Redacts sensitive header values (Authorization, X-API-Key, cookies).
+  @visibleForTesting
+  static Map<String, dynamic> redactHeaders(Map<String, dynamic> headers) {
+    final redacted = Map<String, dynamic>.from(headers);
+    for (final key in redacted.keys.toList()) {
+      if (_sensitiveHeaders.contains(key)) {
+        redacted[key] = '[REDACTED]';
+      }
+    }
+    return redacted;
+  }
+
+  /// Masks sensitive values in a JSON-encodable body (Map/List/primitive).
+  @visibleForTesting
+  static dynamic redactBody(dynamic data) {
+    if (data is Map) {
+      final redacted = <String, dynamic>{};
+      data.forEach((key, value) {
+        final k = key.toString();
+        redacted[k] =
+            _sensitiveBodyKey.hasMatch(k) ? '[REDACTED]' : redactBody(value);
+      });
+      return redacted;
+    }
+    if (data is List) {
+      return data.map(redactBody).toList();
+    }
+    return data;
+  }
+}
 
 /// Singleton Dio-based HTTP client for the Operion Mobile app.
 ///
@@ -32,6 +117,12 @@ class ApiClient {
   /// [baseUrl] is the root URL of the Operion API.
   /// [getAccessToken] is invoked by the auth interceptor before every
   /// non-public request to obtain the current Bearer token.
+  ///
+  /// [enableLogging] controls the debug [LogInterceptor]. It defaults to
+  /// `!kReleaseMode` so release builds NEVER log request/response bodies
+  /// (login posts the plaintext password and every request carries the
+  /// `X-API-Key` header). Tests can pass `false` to assert the release
+  /// behaviour.
   static ApiClient create({
     required String baseUrl,
     required Future<String?> Function() getAccessToken,
@@ -40,6 +131,7 @@ class ApiClient {
     Future<void> Function()? clearTokens,
     VoidCallback? onForceLogout,
     String? apiKey,
+    bool enableLogging = !kReleaseMode,
   }) {
     final headers = <String, dynamic>{'Content-Type': 'application/json'};
     if (apiKey != null && apiKey.isNotEmpty) {
@@ -54,11 +146,13 @@ class ApiClient {
     ));
 
     // ── Logging interceptor ─────────────────────
-    dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      logPrint: (obj) => print('[Dio] $obj'),
-    ));
+    // NEVER installed in release builds: request/response bodies contain
+    // credentials (login password), PII and business payloads, and the
+    // X-API-Key header. Debug/profile builds use the redacting interceptor
+    // so sensitive headers and password-like fields are masked.
+    if (enableLogging) {
+      dio.interceptors.add(RedactingLogInterceptor());
+    }
 
     // ── Auth interceptor ────────────────────────
     dio.interceptors.add(AuthInterceptor(

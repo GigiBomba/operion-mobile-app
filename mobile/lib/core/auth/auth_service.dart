@@ -119,28 +119,33 @@ class AuthService {
   Future<User?> getCurrentUser() => _fetchCurrentUser();
 
   /// Attempts to restore a previous session by refreshing the stored refresh
-  /// token. Returns `true` if the session was restored and a fresh [User]
-  /// profile was fetched.
-  Future<bool> restoreSession() async {
+  /// token. Returns the authenticated [User] on success, or `null` when no
+  /// session could be restored (the caller should treat the session as
+  /// unauthenticated).
+  ///
+  /// The fetched [User] is returned directly so callers do not need a second
+  /// `/me` round-trip — a transient failure of that second fetch would
+  /// otherwise drop a perfectly valid restored session.
+  Future<User?> restoreSession() async {
     final refreshToken = await _tokenManager.getRefreshToken();
-    if (refreshToken == null || refreshToken.isEmpty) return false;
+    if (refreshToken == null || refreshToken.isEmpty) return null;
 
     final refreshed = await _tokenManager.tryRefresh();
     if (!refreshed) {
       await _tokenManager.clearTokens();
-      return false;
+      return null;
     }
 
     try {
       final user = await _fetchCurrentUser();
       if (user == null) {
         await _tokenManager.clearTokens();
-        return false;
+        return null;
       }
-      return true;
+      return user;
     } catch (_) {
       await _tokenManager.clearTokens();
-      return false;
+      return null;
     }
   }
 

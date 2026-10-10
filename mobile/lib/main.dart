@@ -5,12 +5,14 @@ import 'dart:ui' show PlatformDispatcher;
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'app.dart';
 import 'core/app/app_services.dart';
+import 'core/constants.dart';
 import 'core/notifications/local_notification_service.dart';
 import 'core/notifications/notification_handler.dart';
 
@@ -29,6 +31,22 @@ const String _sentryDsn =
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ── Release-mode API-key guard (Bug 6) ─────────────────────────────
+  // `auth_providers.dart` guards the missing key with an `assert`, but
+  // asserts are compiled OUT of release builds — a release APK without the
+  // dart-define would start normally and every API call would fail with
+  // 401/403. Fail fast instead: log a clear error and show a blocking
+  // screen. Debug/profile keep the existing assert.
+  if (kReleaseMode && AppConstants.apiKey.isEmpty) {
+    developer.log(
+      'FATAL: OPERION_API_KEY is not set. Release builds require it:\n'
+      '  flutter build apk --dart-define=OPERION_API_KEY=<key>',
+      name: 'Startup',
+    );
+    runApp(const _MissingApiKeyApp());
+    return;
+  }
 
   // ── Firebase (Phase 5A push-infra gap FIX) ─────────────────────────
   // Previously main.dart had NO Firebase init and NO onBackgroundMessage
@@ -107,6 +125,45 @@ Future<void> main() async {
       unawaited(Sentry.captureException(error, stackTrace: stack));
     }
   });
+}
+
+/// Blocking error screen shown when a release build is missing the
+/// `OPERION_API_KEY` dart-define (Bug 6). The app cannot function without it
+/// (every API call would 401/403), so we refuse to start rather than fail
+/// silently at runtime.
+class _MissingApiKeyApp extends StatelessWidget {
+  const _MissingApiKeyApp();
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.error_outline, size: 48, color: Colors.red),
+                SizedBox(height: 16),
+                Text(
+                  'Operion Mobile cannot start',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'OPERION_API_KEY is not set. Rebuild with:\n'
+                  'flutter build --dart-define=OPERION_API_KEY=<key>',
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Background / terminated-state FCM message handler (data-only payloads).

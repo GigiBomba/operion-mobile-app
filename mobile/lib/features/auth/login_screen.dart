@@ -132,16 +132,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     ref.read(authStateProvider.notifier).setAuthenticating();
 
-    final restored = await ref.read(authServiceProvider).restoreSession();
+    // restoreSession returns the fetched user directly, avoiding a second
+    // `/me` round-trip that could transiently fail and drop the session.
+    final user = await ref.read(authServiceProvider).restoreSession();
 
     if (!mounted) return;
 
-    if (restored) {
-      final user = await ref.read(authServiceProvider).getCurrentUser();
-      if (mounted) {
-        ref.read(currentUserProvider.notifier).state = user;
-        ref.read(authStateProvider.notifier).setAuthenticated();
-      }
+    if (user != null) {
+      ref.read(currentUserProvider.notifier).state = user;
+      ref.read(authStateProvider.notifier).setAuthenticated();
     } else {
       ref.read(authStateProvider.notifier).setUnauthenticated();
       _showError(context.loc.auth_sessionExpired);

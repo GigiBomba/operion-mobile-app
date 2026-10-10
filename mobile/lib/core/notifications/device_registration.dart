@@ -30,8 +30,10 @@ class DeviceRegistration {
   ///
   /// Sends a POST request containing the FCM token and platform identifier.
   /// If the token cannot be obtained, registration is skipped with a log
-  /// warning.
-  Future<void> register() async {
+  /// warning and `false` is returned. Returns `true` when the token was
+  /// successfully registered; failures are logged (never thrown) and return
+  /// `false` so callers can schedule an in-session retry.
+  Future<bool> register() async {
     final token = _pushService.token ?? await _pushService.getToken();
 
     if (token == null || token.isEmpty) {
@@ -39,7 +41,7 @@ class DeviceRegistration {
         'DeviceRegistration: no token available – skipping registration',
         name: 'DeviceRegistration',
       );
-      return;
+      return false;
     }
 
     try {
@@ -48,13 +50,15 @@ class DeviceRegistration {
         'DeviceRegistration: registered token (${token.substring(0, 8)}…)',
         name: 'DeviceRegistration',
       );
+      return true;
     } catch (e) {
       developer.log(
         'DeviceRegistration: registration failed → $e',
         name: 'DeviceRegistration',
       );
-      // Registration failures are non-critical; the token will be refreshed
-      // and re-registered on next app launch.
+      // Registration failures are non-critical; the caller may retry
+      // in-session (see AppServices._registerDeviceWithRetry).
+      return false;
     }
   }
 
