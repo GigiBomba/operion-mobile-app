@@ -15,3 +15,13 @@ Thumbs.db
 
 # Deepwork session state (git-local)
 .slim/deepwork/
+
+# --- added by git cleanup 2026-10-10 ---
+# Firebase config (per-environment - do not commit)
+**/google-services.json
+# Signing material
+*.jks
+*.keystore
+key.properties
+# Tool/session state
+.slim/
