@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:operion_mobile/core/network/auth_interceptor.dart';
+import 'package:operion_mobile/core/network/token_refresher.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -271,7 +272,7 @@ void main() {
       expect(tokensCleared, isFalse);
     });
 
-    test('401 with valid refresh token attempts refresh and fails gracefully',
+    test('401 with valid refresh token but transient network error keeps tokens',
         () async {
       currentRefreshToken = 'valid_rt';
 
@@ -280,17 +281,133 @@ void main() {
         statusCode: 401,
       );
 
-      final handler = _TestErrorHandler();
+      final handler = _RecordingErrorHandler();
       interceptor.onError(error, handler);
 
-      // Allow async onError to complete (includes failed network call)
+      // Allow async onError to complete (the refresh POST fails offline).
       for (int i = 0; i < 10; i++) {
         await Future(() {});
       }
 
-      // The refresh call will fail (no network), so force-logout should fire.
-      expect(forceLogoutCalled, isTrue);
-      expect(tokensCleared, isTrue);
+      // A transient failure (no network in the test env) must NOT log the
+      // user out or wipe the tokens — a driver in a dead zone stays signed in.
+      expect(forceLogoutCalled, isFalse);
+      expect(tokensCleared, isFalse);
+      expect(handler.forwardedError, same(error));
+    });
+
+    test('401 on login endpoint is a plain auth failure (no refresh, no logout)',
+        () async {
+      currentRefreshToken = 'valid_rt';
+
+      final error = _dioError(
+        path: '/api/v1/auth/token',
+        statusCode: 401,
+      );
+
+      final handler = _RecordingErrorHandler();
+      interceptor.onError(error, handler);
+      await Future(() {});
+      await Future(() {});
+
+      // A wrong-password 401 must never enter the refresh/force-logout
+      // machinery (which could flash SessionExpiredScreen or loop the login).
+      expect(forceLogoutCalled, isFalse);
+      expect(tokensCleared, isFalse);
+      expect(handler.forwardedError, same(error));
+    });
+
+    test('401 on forgot-password endpoint is forwarded without refresh',
+        () async {
+      currentRefreshToken = 'valid_rt';
+
+      final error = _dioError(
+        path: '/api/v1/auth/forgot-password',
+        statusCode: 401,
+      );
+
+      final handler = _RecordingErrorHandler();
+      interceptor.onError(error, handler);
+      await Future(() {});
+      await Future(() {});
+
+      expect(forceLogoutCalled, isFalse);
+      expect(tokensCleared, isFalse);
+      expect(handler.forwardedError, same(error));
+    });
+
+    // ── Shared single-flight refresher ─────────────────────────────────
+
+    test('concurrent refresh attempts share a single in-flight request',
+        () async {
+      var refreshCalls = 0;
+      final refresher = TokenRefresher(
+        getRefreshToken: () async => 'valid_rt',
+        saveTokens: (access, refresh) async {},
+      );
+
+      Future<Response> slowRefresh(String refreshToken) async {
+        refreshCalls++;
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        return Response(
+          requestOptions: RequestOptions(path: '/api/v1/auth/refresh'),
+          statusCode: 200,
+          data: {'accessToken': 'at_new', 'refreshToken': 'rt_new'},
+        );
+      }
+
+      final results = await Future.wait([
+        refresher.refresh(slowRefresh),
+        refresher.refresh(slowRefresh),
+        refresher.refresh(slowRefresh),
+      ]);
+
+      // Only ONE network request must be issued for all three callers.
+      expect(refreshCalls, 1);
+      for (final result in results) {
+        expect(result.outcome, TokenRefreshOutcome.success);
+        expect(result.accessToken, 'at_new');
+      }
+    });
+
+    test('refresh parses snake_case token fields (backend shape)', () async {
+      final refresher = TokenRefresher(
+        getRefreshToken: () async => 'valid_rt',
+        saveTokens: (access, refresh) async {},
+      );
+
+      final result = await refresher.refresh(
+        (refreshToken) async => Response(
+          requestOptions: RequestOptions(path: '/api/v1/auth/refresh'),
+          statusCode: 200,
+          data: {'access_token': 'snake_at', 'refresh_token': 'snake_rt'},
+        ),
+      );
+
+      expect(result.outcome, TokenRefreshOutcome.success);
+      expect(result.accessToken, 'snake_at');
+      expect(result.refreshToken, 'snake_rt');
+    });
+
+    test('refresh rejection (401) is classified as rejected, not transient',
+        () async {
+      final refresher = TokenRefresher(
+        getRefreshToken: () async => 'valid_rt',
+        saveTokens: (access, refresh) async {},
+      );
+
+      final result = await refresher.refresh(
+        (refreshToken) async => throw DioException(
+          requestOptions: RequestOptions(path: '/api/v1/auth/refresh'),
+          type: DioExceptionType.badResponse,
+          response: Response(
+            requestOptions: RequestOptions(path: '/api/v1/auth/refresh'),
+            statusCode: 401,
+          ),
+        ),
+      );
+
+      expect(result.outcome, TokenRefreshOutcome.rejected);
     });
 
     // ── Edge cases ────────────────────────────────────────────────────
@@ -378,6 +495,26 @@ class _TestErrorHandler extends ErrorInterceptorHandler {
 
   @override
   void resolve(Response<dynamic> response, [bool? callFollowingResponse]) {}
+
+  @override
+  void reject(DioException error, [bool? callFollowingError]) {}
+}
+
+/// Records what the interceptor did with the error so tests can assert that
+/// the original error was forwarded (and nothing was force-logged).
+class _RecordingErrorHandler extends ErrorInterceptorHandler {
+  DioException? forwardedError;
+  Response<dynamic>? resolvedResponse;
+
+  @override
+  void next(DioException err) {
+    forwardedError = err;
+  }
+
+  @override
+  void resolve(Response<dynamic> response, [bool? callFollowingResponse]) {
+    resolvedResponse = response;
+  }
 
   @override
   void reject(DioException error, [bool? callFollowingError]) {}

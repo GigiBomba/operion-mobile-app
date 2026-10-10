@@ -355,10 +355,16 @@ void main() {
   });
 
   group('LocalNotificationService helpers', () {
-    test('notificationIdFor is positive and deterministic', () {
-      final id = LocalNotificationService.notificationIdFor('abc');
-      expect(id, greaterThan(0));
-      expect(LocalNotificationService.notificationIdFor('abc'), id);
+    test('notificationIdFor returns positive, stable ids per key', () async {
+      final a = await LocalNotificationService.notificationIdFor('abc');
+      expect(a, greaterThan(0));
+      // Same key → same id (so a snooze re-show replaces the original
+      // notification rather than a different one — Bug 5).
+      expect(await LocalNotificationService.notificationIdFor('abc'), a);
+      // Different keys → distinct ids (no 32-bit hash collisions).
+      final b = await LocalNotificationService.notificationIdFor('def');
+      expect(b, greaterThan(0));
+      expect(b, isNot(a));
     });
 
     test('jsonEncodePayload round-trips the alert id', () {

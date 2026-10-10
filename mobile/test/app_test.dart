@@ -38,7 +38,7 @@ class _FakeAuthService implements AuthService {
   @override
   Future<void> logout() async {}
   @override
-  Future<bool> restoreSession() async => false;
+  Future<User?> restoreSession() async => null;
   @override
   Future<User?> getCurrentUser() async => null;
 }

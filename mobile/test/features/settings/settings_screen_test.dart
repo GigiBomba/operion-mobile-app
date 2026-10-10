@@ -61,7 +61,7 @@ class _MockAuthService implements AuthService {
   Future<User?> getCurrentUser() async => null;
 
   @override
-  Future<bool> restoreSession() async => false;
+  Future<User?> restoreSession() async => null;
 }
 
 class _MockMessageBus extends MessageBus {

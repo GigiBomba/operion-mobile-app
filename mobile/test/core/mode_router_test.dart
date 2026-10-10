@@ -55,9 +55,9 @@ class _FakeTokenManager implements TokenManager {
 }
 
 class _FakeAuthService implements AuthService {
-  bool _restoreSessionResult = false;
+  User? _restoreSessionResult;
 
-  void setRestoreSessionResult(bool value) => _restoreSessionResult = value;
+  void setRestoreSessionResult(User? value) => _restoreSessionResult = value;
 
   @override
   Future<AuthResult> login(String email, String password) async =>
@@ -70,7 +70,7 @@ class _FakeAuthService implements AuthService {
   Future<User?> getCurrentUser() async => null;
 
   @override
-  Future<bool> restoreSession() async => _restoreSessionResult;
+  Future<User?> restoreSession() async => _restoreSessionResult;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

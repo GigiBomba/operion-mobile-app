@@ -518,20 +518,20 @@ void main() {
 
     // ── restoreSession() ────────────────────────────────────────────────
 
-    test('restoreSession with no refresh token returns false', () async {
+    test('restoreSession with no refresh token returns null', () async {
       final result = await authService.restoreSession();
 
-      expect(result, isFalse);
+      expect(result, isNull);
     });
 
-    test('restoreSession with empty refresh token returns false', () async {
+    test('restoreSession with empty refresh token returns null', () async {
       await tokenManager.saveTokens('at1', '');
       final result = await authService.restoreSession();
 
-      expect(result, isFalse);
+      expect(result, isNull);
     });
 
-    test('restoreSession with valid refresh returns true and tokens updated',
+    test('restoreSession with valid refresh returns the user and updates tokens',
         () async {
       await tokenManager.saveTokens('at_old', 'rt_valid');
 
@@ -543,15 +543,35 @@ void main() {
 
       final result = await authService.restoreSession();
 
-      expect(result, isTrue);
+      // The fetched user is returned directly (no second /me round-trip).
+      expect(result, isA<User>());
+      expect(result!.email, 'test@test.com');
       final access = await tokenManager.getAccessToken();
       final refresh = await tokenManager.getRefreshToken();
       expect(access, 'at_new');
       expect(refresh, 'rt_new');
     });
 
+    test('restoreSession parses snake_case refresh response fields',
+        () async {
+      await tokenManager.saveTokens('at_old', 'rt_valid');
+
+      fakeEndpoints.onRefresh = () => Response(
+            requestOptions: RequestOptions(path: ''),
+            statusCode: 200,
+            data: {'access_token': 'snake_at', 'refresh_token': 'snake_rt'},
+          );
+      fakeEndpoints.onGetMe = () => _userResponse();
+
+      final result = await authService.restoreSession();
+
+      expect(result, isA<User>());
+      expect(await tokenManager.getAccessToken(), 'snake_at');
+      expect(await tokenManager.getRefreshToken(), 'snake_rt');
+    });
+
     test(
-        'restoreSession with failed refresh returns false and clears tokens',
+        'restoreSession with failed refresh returns null and clears tokens',
         () async {
       await tokenManager.saveTokens('at1', 'rt1');
 
@@ -559,13 +579,13 @@ void main() {
 
       final result = await authService.restoreSession();
 
-      expect(result, isFalse);
+      expect(result, isNull);
       final access = await tokenManager.getAccessToken();
       expect(access, isNull);
     });
 
     test(
-        'restoreSession succeeds but getMe fails returns false and clears tokens',
+        'restoreSession succeeds but getMe fails returns null and clears tokens',
         () async {
       await tokenManager.saveTokens('at1', 'rt1');
 
@@ -577,7 +597,7 @@ void main() {
 
       final result = await authService.restoreSession();
 
-      expect(result, isFalse);
+      expect(result, isNull);
       final access = await tokenManager.getAccessToken();
       expect(access, isNull);
     });
@@ -591,7 +611,7 @@ void main() {
 
       final result = await authService.restoreSession();
 
-      expect(result, isFalse);
+      expect(result, isNull);
       final access = await tokenManager.getAccessToken();
       expect(access, isNull);
     });
