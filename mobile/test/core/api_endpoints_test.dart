@@ -744,7 +744,7 @@ void main() {
       captured = RequestOptions(path: '');
     });
 
-    test('registerDevice sends POST to /mobile/devices/register with token and platform', () async {
+    test('registerDevice sends POST to /support/devices with token and platform', () async {
       endpoints = DeviceEndpoints(_createMockClient(
         onRequest: (opts) {
           captured = opts;
@@ -754,7 +754,7 @@ void main() {
       await endpoints.registerDevice('fcm-token-abc', 'android');
 
       expect(captured.method, equals('POST'));
-      expect(captured.path, equals('/api/v1/mobile/devices/register'));
+      expect(captured.path, equals('/api/v1/support/devices'));
       expect(captured.data, isA<Map>());
       expect((captured.data as Map)['token'], equals('fcm-token-abc'));
       expect((captured.data as Map)['platform'], equals('android'));
@@ -808,7 +808,7 @@ void main() {
       expect((captured.data as Map)['device_name'], isNull);
     });
 
-    test('unregisterDevice sends DELETE to /mobile/devices/register', () async {
+    test('unregisterDevice sends DELETE to /support/devices', () async {
       endpoints = DeviceEndpoints(_createMockClient(
         onRequest: (opts) {
           captured = opts;
@@ -818,7 +818,7 @@ void main() {
       await endpoints.unregisterDevice();
 
       expect(captured.method, equals('DELETE'));
-      expect(captured.path, equals('/api/v1/mobile/devices/register'));
+      expect(captured.path, equals('/api/v1/support/devices'));
     });
   });
 

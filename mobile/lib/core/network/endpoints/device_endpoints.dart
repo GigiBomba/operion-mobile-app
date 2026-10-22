@@ -18,7 +18,7 @@ class DeviceEndpoints {
     String? deviceId,
     String? deviceName,
   }) =>
-      client.post('/api/v1/mobile/devices/register', data: {
+      client.post('/api/v1/support/devices', data: {
         'token': token,
         'platform': platform,
         if (deviceId != null) 'device_id': deviceId,
@@ -27,5 +27,5 @@ class DeviceEndpoints {
 
   /// Unregister this device from push notifications.
   Future<Response> unregisterDevice() =>
-      client.delete('/api/v1/mobile/devices/register');
+      client.delete('/api/v1/support/devices');
 }
