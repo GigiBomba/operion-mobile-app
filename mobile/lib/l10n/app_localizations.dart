@@ -79,6 +79,38 @@ class AppLocalizations {
   String get reportIssue_submit => _get('reportIssue_submit');
   String get reportIssue_success => _get('reportIssue_success');
   String get reportIssue_error => _get('reportIssue_error');
+  String get reportIssue_composeIntro => _get('reportIssue_composeIntro');
+  String get reportIssue_composeHint => _get('reportIssue_composeHint');
+  String get reportIssue_minChars => _get('reportIssue_minChars');
+  String get reportIssue_attachScreenshot => _get('reportIssue_attachScreenshot');
+  String get reportIssue_removeAttachment => _get('reportIssue_removeAttachment');
+  String get reportIssue_attachmentError => _get('reportIssue_attachmentError');
+  String get reportIssue_ack => _get('reportIssue_ack');
+  String get reportIssue_done => _get('reportIssue_done');
+  String get reportIssue_threadTitle => _get('reportIssue_threadTitle');
+  String get reportIssue_originalReport => _get('reportIssue_originalReport');
+  String get reportIssue_you => _get('reportIssue_you');
+  String get reportIssue_argoSupport => _get('reportIssue_argoSupport');
+  String get reportIssue_replyHint => _get('reportIssue_replyHint');
+  String get reportIssue_replySend => _get('reportIssue_replySend');
+  String get reportIssue_replyError => _get('reportIssue_replyError');
+  String get reportIssue_waiting => _get('reportIssue_waiting');
+  String get reportIssue_resolvedNote => _get('reportIssue_resolvedNote');
+  String get reportIssue_newIssue => _get('reportIssue_newIssue');
+  String get reportIssue_loading => _get('reportIssue_loading');
+  String get reportIssue_emptyThread => _get('reportIssue_emptyThread');
+  String get reportIssue_threadError => _get('reportIssue_threadError');
+  String get reportIssue_badgeTooltip => _get('reportIssue_badgeTooltip');
+  String get reportIssue_refresh => _get('reportIssue_refresh');
+  String get reportIssue_close => _get('reportIssue_close');
+  String get reportIssue_statusLogged => _get('reportIssue_statusLogged');
+  String get reportIssue_statusBeingInvestigated =>
+      _get('reportIssue_statusBeingInvestigated');
+  String get reportIssue_statusFixInReview =>
+      _get('reportIssue_statusFixInReview');
+  String get reportIssue_statusFixed => _get('reportIssue_statusFixed');
+  String get reportIssue_statusNeedsAttention =>
+      _get('reportIssue_statusNeedsAttention');
 
   // ── Route Planner ─────────────────────────────────────────────
   String get routePlanner_origin => _get('routePlanner_origin');
@@ -938,6 +970,35 @@ class AppLocalizations {
       'reportIssue_submit': 'Trimite',
       'reportIssue_success': 'Problema a fost raportată cu succes',
       'reportIssue_error': 'Eroare la trimiterea raportului',
+      'reportIssue_composeIntro': 'Ce nu merge? Include pașii de reproducere dacă poți.',
+      'reportIssue_composeHint': 'Spune-ne ce s-a întâmplat. ARGO îți răspunde aici și poți reveni oricând.',
+      'reportIssue_minChars': 'Adaugă puțin mai multe detalii (cel puțin 10 caractere).',
+      'reportIssue_attachScreenshot': 'Atașează captură de ecran',
+      'reportIssue_removeAttachment': 'Elimină captura',
+      'reportIssue_attachmentError': 'Captura de ecran nu a putut fi încărcată. Încearcă din nou.',
+      'reportIssue_ack': 'Am notat — ne ocupăm de asta. Îți scriem aici dacă mai avem nevoie de ceva sau când este rezolvat.',
+      'reportIssue_done': 'Gata',
+      'reportIssue_threadTitle': 'Raportul tău',
+      'reportIssue_originalReport': 'Raportul tău',
+      'reportIssue_you': 'Tu',
+      'reportIssue_argoSupport': 'Suport ARGO',
+      'reportIssue_replyHint': 'Răspunde...',
+      'reportIssue_replySend': 'Trimite',
+      'reportIssue_replyError': 'Răspunsul nu a putut fi trimis. Încearcă din nou.',
+      'reportIssue_waiting': 'ARGO analizează raportul. Îți răspundem aici când avem noutăți.',
+      'reportIssue_resolvedNote': 'Problema a fost rezolvată. Mulțumim că ne-ai ajutat să o reparăm.',
+      'reportIssue_newIssue': 'Raportează o problemă nouă',
+      'reportIssue_loading': 'Se încarcă raportul...',
+      'reportIssue_emptyThread': 'Niciun mesaj încă.',
+      'reportIssue_threadError': 'Nu am putut încărca raportul. Încearcă din nou.',
+      'reportIssue_badgeTooltip': 'Ai o actualizare la raport',
+      'reportIssue_refresh': 'Reîmprospătează',
+      'reportIssue_close': 'Închide',
+      'reportIssue_statusLogged': 'Înregistrat',
+      'reportIssue_statusBeingInvestigated': 'Se analizează',
+      'reportIssue_statusFixInReview': 'Corectura în verificare',
+      'reportIssue_statusFixed': 'Rezolvat',
+      'reportIssue_statusNeedsAttention': 'Necesită o analiză atentă',
       'routePlanner_origin': 'Origine', 'routePlanner_originHint': 'Introdu adresa de origine',
       'routePlanner_destination': 'Destinație', 'routePlanner_destinationHint': 'Introdu adresa destinație',
       'routePlanner_stops': 'Opriri', 'routePlanner_addStop': 'Adaugă oprire',
@@ -1581,6 +1642,35 @@ class AppLocalizations {
       'reportIssue_submit': 'Submit',
       'reportIssue_success': 'Issue reported successfully',
       'reportIssue_error': 'Error submitting report',
+      'reportIssue_composeIntro': "What's going wrong? Include any steps to reproduce if you can.",
+      'reportIssue_composeHint': "Tell us what happened. ARGO replies here, and you can come back any time.",
+      'reportIssue_minChars': 'Add a little more detail (at least 10 characters).',
+      'reportIssue_attachScreenshot': 'Attach screenshot',
+      'reportIssue_removeAttachment': 'Remove screenshot',
+      'reportIssue_attachmentError': 'The screenshot could not be uploaded. Please try again.',
+      'reportIssue_ack': "Got it - we're on it. We'll let you know here if we need anything else or once it's resolved.",
+      'reportIssue_done': 'Done',
+      'reportIssue_threadTitle': 'Your Report',
+      'reportIssue_originalReport': 'Your report',
+      'reportIssue_you': 'You',
+      'reportIssue_argoSupport': 'ARGO Support',
+      'reportIssue_replyHint': 'Reply...',
+      'reportIssue_replySend': 'Send',
+      'reportIssue_replyError': 'The reply could not be sent. Please try again.',
+      'reportIssue_waiting': 'ARGO is looking into your report. We will reply here when there is news.',
+      'reportIssue_resolvedNote': 'This issue has been resolved. Thank you for helping us fix it.',
+      'reportIssue_newIssue': 'Report a new issue',
+      'reportIssue_loading': 'Loading your report...',
+      'reportIssue_emptyThread': 'No messages yet.',
+      'reportIssue_threadError': 'We could not load your report. Please try again.',
+      'reportIssue_badgeTooltip': 'You have an update on your report',
+      'reportIssue_refresh': 'Refresh',
+      'reportIssue_close': 'Close',
+      'reportIssue_statusLogged': 'Logged',
+      'reportIssue_statusBeingInvestigated': 'Being looked into',
+      'reportIssue_statusFixInReview': 'Fix in review',
+      'reportIssue_statusFixed': 'Fixed',
+      'reportIssue_statusNeedsAttention': 'Needs a closer look',
       'routePlanner_origin': 'Origin', 'routePlanner_originHint': 'Enter origin address',
       'routePlanner_destination': 'Destination', 'routePlanner_destinationHint': 'Enter destination address',
       'routePlanner_stops': 'Stops', 'routePlanner_addStop': 'Add Stop',

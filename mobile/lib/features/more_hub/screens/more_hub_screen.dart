@@ -20,6 +20,9 @@ import '../../local_download/screens/local_download_screen.dart';
 import '../../maintenance/screens/maintenance_screen.dart';
 import '../../invoicing/screens/invoice_list_screen.dart';
 import '../../profit_calculator/screens/profit_calculator_screen.dart';
+import '../../report_issue/providers/report_issue_providers.dart';
+import '../../report_issue/screens/report_issue_screen.dart';
+import '../../report_issue/screens/report_issue_sheet.dart';
 import '../../route_planner/screens/route_planner_screen.dart';
 import '../../settings/settings_screen.dart';
 import '../../tachograph/screens/tachograph_screen.dart';
@@ -34,16 +37,33 @@ class MoreTileDef {
   /// Any-of permission gate (§8.2): only renders when the user holds one.
   final Set<Permission> permissions;
 
+  /// Lightweight input flows open as a bottom sheet (blueprint 41.3e); the
+  /// [builder] remains the full-screen fallback for tablet master-detail and
+  /// push deep links.
+  final bool opensSheet;
+
+  /// Unread-reply dot on the tile (More-tab badge propagation).
+  final bool showBadge;
+
   const MoreTileDef({
     required this.icon,
     required this.label,
     required this.builder,
     required this.permissions,
+    this.opensSheet = false,
+    this.showBadge = false,
   });
 }
 
 /// All More tiles, permission-filtered before `itemCount`.
-List<MoreTileDef> buildMoreTiles(AppLocalizations loc, bool Function(Permission) can) {
+///
+/// [showReportIssueBadge] is computed from [reportIssueBadgeProvider] by the
+/// screen and painted on the "Report an Issue" tile.
+List<MoreTileDef> buildMoreTiles(
+  AppLocalizations loc,
+  bool Function(Permission) can, {
+  bool showReportIssueBadge = false,
+}) {
   final all = [
     MoreTileDef(
       icon: LucideIcons.messageSquare,
@@ -124,6 +144,14 @@ List<MoreTileDef> buildMoreTiles(AppLocalizations loc, bool Function(Permission)
       permissions: const {Permissions.uploadDocument},
     ),
     MoreTileDef(
+      icon: LucideIcons.flag,
+      label: loc.nav_reportIssue,
+      builder: (_) => const ReportIssueScreen(),
+      permissions: const {},
+      opensSheet: true,
+      showBadge: showReportIssueBadge,
+    ),
+    MoreTileDef(
       icon: LucideIcons.settings,
       label: loc.nav_settings,
       builder: (_) => const SettingsScreen(enableTabletLayout: false),
@@ -151,6 +179,17 @@ class MoreHubScreen extends ConsumerStatefulWidget {
 class _MoreHubScreenState extends ConsumerState<MoreHubScreen> {
   int? _selectedTile;
 
+  @override
+  void initState() {
+    super.initState();
+    // Resume the persisted report thread on first open so the reply badge is
+    // accurate before the customer taps the tile (blueprint 41.3e).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(reportIssueControllerProvider.notifier).load();
+    });
+  }
+
   void _openSearch() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const GlobalSearchScreen()),
@@ -161,7 +200,12 @@ class _MoreHubScreenState extends ConsumerState<MoreHubScreen> {
   Widget build(BuildContext context) {
     final loc = context.loc;
     final permission = ref.watch(permissionProvider);
-    final tiles = buildMoreTiles(loc, permission.can);
+    final showReportIssueBadge = ref.watch(reportIssueBadgeProvider);
+    final tiles = buildMoreTiles(
+      loc,
+      permission.can,
+      showReportIssueBadge: showReportIssueBadge,
+    );
     final tablet = isTabletWidth(context) && tiles.isNotEmpty;
 
     return Scaffold(
@@ -303,11 +347,18 @@ class _MoreGrid extends StatelessWidget {
           _MoreTile(
             icon: tiles[i].icon,
             label: tiles[i].label,
+            showBadge: tiles[i].showBadge,
             onTap: onTileTap != null
                 ? () => onTileTap!(i)
-                : () => Navigator.of(context).push(
+                : () {
+                    if (tiles[i].opensSheet) {
+                      showReportIssueSheet(context);
+                      return;
+                    }
+                    Navigator.of(context).push(
                       MaterialPageRoute<void>(builder: tiles[i].builder),
-                    ),
+                    );
+                  },
           ),
       ],
     );
@@ -322,29 +373,61 @@ class _MoreTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.showBadge = false,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool showBadge;
+
+  /// Test handle matching the app-wide unread-dot convention
+  /// (`alert_inbox_screen.dart`: an 8x8 `AppColors.info` circle).
+  static const Key badgeKey = Key('moreTileBadgeDot');
 
   @override
   Widget build(BuildContext context) {
     return AppCard(
       onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Stack(
+        fit: StackFit.expand,
+        alignment: Alignment.center,
         children: [
-          Icon(icon, size: 28, color: AppColors.primary),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 28, color: AppColors.primary),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
+          if (showBadge)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Tooltip(
+                message: context.loc.reportIssue_badgeTooltip,
+                child: Container(
+                  key: badgeKey,
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: AppColors.info,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +15,9 @@ import '../notifications/device_registration.dart';
 import '../notifications/local_notification_service.dart';
 import '../notifications/notification_handler.dart';
 import '../notifications/notification_providers.dart';
+import '../notifications/notification_router.dart';
 import '../notifications/push_service.dart';
+import '../notifications/support_thread_router.dart';
 import '../quick_actions/quick_actions_service.dart';
 import '../sync/action_queue.dart';
 import '../sync/connectivity_monitor.dart';
@@ -51,6 +54,7 @@ class AppServices {
   ProviderSubscription<AuthState>? _authSubscription;
   StreamSubscription<PushNotification>? _pushSubscription;
   StreamSubscription<String>? _tokenRefreshSubscription;
+  StreamSubscription<RemoteMessage>? _openedAppSubscription;
   OfflineReplayCoordinator? _replayCoordinator;
   bool _initialized = false;
 
@@ -137,6 +141,12 @@ class AppServices {
           .onForegroundMessage(notification.data, c);
     });
 
+    // ── 3a. Support-reply tap deep links (blueprint 41.3e) ───────────
+    // FCM notification-type deliveries (and cold starts) route straight to
+    // the report thread. Data-only alerts keep using the local-notification
+    // tap path in `NotificationActionHandler`.
+    await _wirePushTaps();
+
     // ── 3b. Token refresh → re-register the device (Bug 2) ───────────
     // FCM rotates the token periodically; the backend keeps the stale token
     // and pushes silently stop unless we re-register. The provider is always
@@ -191,7 +201,37 @@ class AppServices {
     }
   }
 
-Future<void> _registerDevice(PushService push) async {
+  /// Wires FCM notification taps (background -> foreground, and cold start)
+  /// to the report thread. No-op when Firebase is not initialized (tests).
+  Future<void> _wirePushTaps() async {
+    final container = _container;
+    if (container == null) return;
+    try {
+      if (Firebase.apps.isEmpty) return;
+      _openedAppSubscription =
+          FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        _handlePushTap(message.data, container);
+      });
+      final initial = await FirebaseMessaging.instance.getInitialMessage();
+      if (initial != null) _handlePushTap(initial.data, container);
+    } catch (e) {
+      developer.log('AppServices: push tap wiring failed → $e',
+          name: 'AppServices');
+    }
+  }
+
+  void _handlePushTap(Map<String, dynamic> data, ProviderContainer container) {
+    if (NotificationRouter.resolveRoute(data) !=
+        NotificationRoute.supportThread) {
+      return;
+    }
+    final conversationId =
+        NotificationRouter.resolveParams(data)?['conversationId'];
+    if (conversationId == null || conversationId.isEmpty) return;
+    unawaited(openSupportThread(container, conversationId));
+  }
+
+  Future<void> _registerDevice(PushService push) async {
     final container = _container;
     if (container == null) return;
     final current = push.token;
@@ -251,6 +291,8 @@ Future<void> _registerDevice(PushService push) async {
     _pushSubscription?.cancel();
     _tokenRefreshSubscription?.cancel();
     _tokenRefreshSubscription = null;
+    _openedAppSubscription?.cancel();
+    _openedAppSubscription = null;
     _replayCoordinator?.dispose();
     _replayCoordinator = null;
     QuickActionService.instance.dispose();

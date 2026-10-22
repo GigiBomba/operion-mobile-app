@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/dispatcher/alerts/approval_detail_screen.dart';
 import '../../features/dispatcher/home/dispatcher_providers.dart';
+import '../../features/report_issue/providers/report_issue_providers.dart';
 import '../auth/auth_providers.dart';
 import '../i18n/app_localizations.dart';
 import '../navigation/app_navigator.dart';
@@ -16,6 +17,7 @@ import '../widgets/widget_data_service.dart';
 import 'local_notification_service.dart';
 import 'notification_actions.dart';
 import 'notification_router.dart';
+import 'support_thread_router.dart';
 
 // ── Parsed data-only alert push ─────────────────────────────────────────
 
@@ -59,6 +61,59 @@ class AlertPushData {
       alertId: alertId,
       title: (data['title'] ?? 'Operion Alert').toString(),
       body: (data['message'] ?? data['body'] ?? '').toString(),
+      messageId: messageId,
+    );
+  }
+}
+
+// ── Parsed data-only support-reply push ─────────────────────────────────
+
+/// Parsed representation of a `type=support_reply` FCM data message.
+///
+/// Backend payload contract (documented in
+/// `docs/report-issue-push.md`):
+/// - `type`            -> `'support_reply'`
+/// - `conversation_id` -> the report thread to open on tap
+/// - `title` / `message` -> display text (optional)
+/// - `message_id`      -> dedupe key (iOS 18 double-fire guard)
+///
+/// The push is displayed locally without inline actions; tapping it opens
+/// the Report an Issue thread for [conversationId].
+@immutable
+class SupportReplyPushData {
+  const SupportReplyPushData({
+    required this.conversationId,
+    required this.title,
+    required this.body,
+    required this.messageId,
+  });
+
+  final String conversationId;
+  final String title;
+  final String body;
+  final String messageId;
+
+  /// Parses [data] defensively; returns `null` for non-support messages.
+  static SupportReplyPushData? tryParse(Map<String, dynamic> data) {
+    if ((data['type'] ?? '').toString() != 'support_reply') return null;
+    final conversationId = (data['conversation_id'] ??
+            data['conversationId'] ??
+            data['thread_id'] ??
+            '')
+        .toString()
+        .trim();
+    if (conversationId.isEmpty) return null;
+    final body =
+        (data['message'] ?? data['body'] ?? 'You have an update on your report')
+            .toString();
+    final messageId = (data['message_id'] ??
+            data['messageId'] ??
+            'support-reply:$conversationId:${body.hashCode}')
+        .toString();
+    return SupportReplyPushData(
+      conversationId: conversationId,
+      title: (data['title'] ?? 'Your Report').toString(),
+      body: body,
       messageId: messageId,
     );
   }
@@ -168,7 +223,9 @@ class NotificationActionHandler {
     AppLocalizations? loc,
   }) async {
     final alert = AlertPushData.tryParse(data);
-    if (alert == null) return false;
+    if (alert == null) {
+      return _showSupportReply(data, loc: loc);
+    }
     try {
       if (!await dedupeStore.tryClaim(alert.messageId)) {
         developer.log(
@@ -207,6 +264,53 @@ class NotificationActionHandler {
     }
   }
 
+  /// Displays a `type=support_reply` message and returns `false` when [data]
+  /// is not a support-reply payload (or is a duplicate).
+  ///
+  /// Safe in the headless background isolate: local plugin + prefs only.
+  Future<bool> _showSupportReply(
+    Map<String, dynamic> data, {
+    AppLocalizations? loc,
+  }) async {
+    final support = SupportReplyPushData.tryParse(data);
+    if (support == null) return false;
+    final dedupeKey = 'support:${support.messageId}';
+    try {
+      if (!await dedupeStore.tryClaim(dedupeKey)) {
+        developer.log(
+          'Notifications: duplicate support reply skipped '
+          '(${support.messageId})',
+          name: 'Notifications',
+        );
+        return false;
+      }
+      try {
+        await localNotifications.showSupportReplyNotification(
+          // Keyed by conversation so a newer reply replaces the previous
+          // notification for the same report.
+          id: await LocalNotificationService.notificationIdFor(
+            'support:${support.conversationId}',
+          ),
+          title: loc?.reportIssue_threadTitle ?? support.title,
+          body: loc?.reportIssue_badgeTooltip ?? support.body,
+          conversationId: support.conversationId,
+        );
+      } catch (e) {
+        await dedupeStore.unclaim(dedupeKey);
+        rethrow;
+      }
+      developer.log(
+        'Notifications: showed support reply for ${support.conversationId}',
+        name: 'Notifications',
+      );
+      return true;
+    } catch (e) {
+      developer.log('Notifications: support show failed → $e',
+          name: 'Notifications');
+      return false;
+    }
+  }
+
   /// Main-isolate entry for a foreground FCM message: shows the local
   /// notification (deduped) and triggers the push-refreshed widget update.
   Future<void> onForegroundMessage(
@@ -215,6 +319,17 @@ class NotificationActionHandler {
   ) async {
     final loc = AppLocalizations(container.read(localeProvider));
     final shown = await showFromDataMessage(data, loc: loc);
+    final support = SupportReplyPushData.tryParse(data);
+    if (support != null) {
+      // Refresh the thread/badge state while the app is open (blueprint
+      // 41.3e badge propagation). The controller keeps the loaded thread
+      // visible and flips `requiresReply` for the More-tab dot.
+      unawaited(
+        container
+            .read(reportIssueControllerProvider.notifier)
+            .load(conversationId: support.conversationId),
+      );
+    }
     if (shown) {
       unawaited(WidgetDataService.onPushMessage(container, data));
     }
@@ -231,6 +346,13 @@ class NotificationActionHandler {
     NotificationResponse response,
     ProviderContainer container,
   ) async {
+    // Support-reply taps deep-link into the report thread, not an alert.
+    final supportConversationId = _supportConversationIdFromResponse(response);
+    if (supportConversationId != null) {
+      await openSupportThread(container, supportConversationId);
+      return;
+    }
+
     final alertId = _alertIdFromResponse(response);
     if (alertId == null) return;
 
@@ -421,6 +543,38 @@ class NotificationActionHandler {
     final data = response.data;
     if (data['alert_id'] != null) return data['alert_id'].toString();
     if (data['alertId'] != null) return data['alertId'].toString();
+    return null;
+  }
+
+  /// Extracts the support conversation id from a tapped notification.
+  ///
+  /// Support replies are shown locally with a JSON payload
+  /// (`{"type":"support_reply","conversation_id":"..."}`), so the payload is
+  /// authoritative; platform `data` is a fallback.
+  String? _supportConversationIdFromResponse(NotificationResponse response) {
+    final payload = response.payload;
+    if (payload != null && payload.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(payload);
+        if (decoded is Map) {
+          final type = (decoded['type'] ?? '').toString();
+          final id = decoded['conversation_id'] ??
+              decoded['conversationId'] ??
+              decoded['thread_id'];
+          if (type == 'support_reply' && id != null) {
+            return id.toString();
+          }
+        }
+      } catch (_) {
+        // Not JSON — fall through to platform data.
+      }
+    }
+    final data = response.data;
+    if ((data['type'] ?? '').toString() == 'support_reply') {
+      final id =
+          data['conversation_id'] ?? data['conversationId'] ?? data['thread_id'];
+      if (id != null) return id.toString();
+    }
     return null;
   }
 }

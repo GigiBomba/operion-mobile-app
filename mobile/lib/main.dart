@@ -170,8 +170,10 @@ class _MissingApiKeyApp extends StatelessWidget {
 ///
 /// Runs in a headless isolate with NO access to the encrypted token store.
 /// Alert-type messages are displayed as rich local notifications with inline
-/// actions (approve/snooze/view); everything else is ignored. Actions tapped
-/// here are persisted and executed on the next authenticated launch.
+/// actions (approve/snooze/view); support-reply messages are displayed as a
+/// simple notification that deep-links into the report thread. Everything
+/// else is ignored. Actions tapped here are persisted and executed on the
+/// next authenticated launch.
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();

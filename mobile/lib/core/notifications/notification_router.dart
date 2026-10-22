@@ -9,6 +9,10 @@ enum NotificationRoute {
   /// Navigates to an alert detail or approval screen.
   alertDetail,
 
+  /// Navigates to the Report an Issue thread for a support reply
+  /// (`type=support_reply`, blueprint 41.3e).
+  supportThread,
+
   /// Navigates to the driver home screen.
   driverHome,
 
@@ -44,6 +48,7 @@ class NotificationRouter {
   /// | `new_message`          | [NotificationRoute.messageThread]   |
   /// | `alert`                | [NotificationRoute.alertDetail]     |
   /// | `approval`             | [NotificationRoute.alertDetail]     |
+  /// | `support_reply`        | [NotificationRoute.supportThread]   |
   /// | `check_in_expiring`    | `null` (no navigation)              |
   static NotificationRoute? resolveRoute(Map<String, dynamic> data) {
     final type = data['type'] as String?;
@@ -56,6 +61,8 @@ class NotificationRouter {
       case 'alert':
       case 'approval':
         return NotificationRoute.alertDetail;
+      case 'support_reply':
+        return NotificationRoute.supportThread;
       case 'dispatcher_home':
         return NotificationRoute.dispatcherHome;
       case 'driver_home':
@@ -73,14 +80,19 @@ class NotificationRouter {
   /// - `threadId`
   /// - `alertId`
   /// - `driverId`
+  /// - `conversationId` (support reply threads)
   ///
   /// These can be passed as route arguments when pushing a named route.
   static Map<String, String>? resolveParams(Map<String, dynamic> data) {
+    final conversationId =
+        data['conversation_id'] ?? data['conversationId'] ?? data['thread_id'];
     final params = <String, String>{
       if (data['transport_id'] != null) 'transportId': data['transport_id'].toString(),
       if (data['thread_id'] != null) 'threadId': data['thread_id'].toString(),
       if (data['alert_id'] != null) 'alertId': data['alert_id'].toString(),
       if (data['driver_id'] != null) 'driverId': data['driver_id'].toString(),
+      if (conversationId != null)
+        'conversationId': conversationId.toString(),
     };
     return params.isNotEmpty ? params : null;
   }

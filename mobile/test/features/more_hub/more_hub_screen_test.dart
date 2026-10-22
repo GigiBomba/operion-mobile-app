@@ -82,7 +82,7 @@ void main() {
   group('MoreHubScreen', () {
     for (final locale in [const Locale('en'), const Locale('ro')]) {
       testWidgets(
-        'renders 14 tiles in _tiles order with non-empty labels '
+        'renders 15 tiles in _tiles order with non-empty labels '
         '(${locale.languageCode})',
         (tester) async {
           await tester.pumpWidget(createTestApp(locale: locale));
@@ -91,13 +91,13 @@ void main() {
           // Verify the grid exists.
           expect(find.byType(GridView), findsOneWidget);
 
-          // Exactly 14 AppCard tiles are rendered (Team Management +
-          // Tachograph added in Phase 4B — blueprint §2 rows 13/19/20).
+          // Exactly 15 AppCard tiles are rendered (Report an Issue added in
+          // W9 41.3e).
           final cards = find.descendant(
             of: find.byType(GridView),
             matching: find.byType(AppCard),
           );
-          expect(cards, findsNWidgets(14));
+          expect(cards, findsNWidgets(15));
 
           // Verify the tiles render in the exact order of `_tiles`.
           final loc = AppLocalizations(locale);
@@ -115,6 +115,7 @@ void main() {
             loc.nav_maintenance,
             loc.nav_teamsManagement,
             loc.nav_tachograph,
+            loc.nav_reportIssue,
             loc.nav_settings,
           ];
 
@@ -190,11 +191,11 @@ void main() {
         of: find.byType(GridView),
         matching: find.byType(AppCard),
       );
-      // 10 un-gated tiles remain: 14 total − analytics (can_view_analytics) −
+      // 11 un-gated tiles remain: 15 total − analytics (can_view_analytics) −
       // invoicing (can_create_invoice) − maintenance (can_schedule_maintenance)
       // − team management (can_manage_users), all four denied to dispatcher per
       // the real permission matrix. Tachograph (can_upload_document) IS shown.
-      expect(cards, findsNWidgets(10));
+      expect(cards, findsNWidgets(11));
 
       final loc = AppLocalizations(const Locale('en'));
       expect(find.text(loc.nav_invoicing), findsNothing,

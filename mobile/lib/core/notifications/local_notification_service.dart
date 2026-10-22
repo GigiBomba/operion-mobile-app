@@ -15,6 +15,9 @@ import 'notification_actions.dart';
 /// - Alerts are ALWAYS displayed locally from data-only FCM messages
 ///   (`type=alert` / `type=approval`), never auto-presented by FCM
 ///   (`setForegroundNotificationPresentationOptions(alert: false)` on iOS).
+/// - Support replies (`type=support_reply`) are displayed on a separate
+///   `support_updates_channel` with no inline actions; tapping the
+///   notification opens the report thread (blueprint 41.3e).
 /// - The Android channel id is `alerts_channel` — deliberately distinct from
 ///   the GPS foreground-task channel (`operion_navigation`) used by
 ///   `flutter_foreground_task` to avoid channel collisions.
@@ -49,6 +52,12 @@ class LocalNotificationService {
 
   /// Darwin notification category for alert-type notifications.
   static const String alertsCategoryId = 'operion_alerts';
+
+  /// Android channel for async-report replies (no inline actions).
+  static const String supportChannelId = 'support_updates_channel';
+  static const String supportChannelName = 'Support Updates';
+  static const String supportChannelDescription =
+      'Replies from ARGO Support on reported issues';
 
   final FlutterLocalNotificationsPlugin _plugin;
   final Future<void> Function() _initializeTz;
@@ -234,6 +243,51 @@ class LocalNotificationService {
         macOS: iosDetails,
       ),
       payload: jsonEncodePayload(alertId),
+    );
+  }
+
+  /// Shows a support-reply notification without inline actions (blueprint
+  /// 41.3e). Tapping it opens the report thread identified by
+  /// [conversationId]; the payload is consumed by
+  /// `NotificationActionHandler.handleResponse`.
+  Future<void> showSupportReplyNotification({
+    required int id,
+    required String title,
+    required String body,
+    required String conversationId,
+  }) async {
+    if (!_initialized) return;
+
+    const androidDetails = AndroidNotificationDetails(
+      supportChannelId,
+      supportChannelName,
+      channelDescription: supportChannelDescription,
+      importance: Importance.high,
+      priority: Priority.high,
+      category: AndroidNotificationCategory.message,
+      icon: '@drawable/ic_notification_small',
+      onlyAlertOnce: true,
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    await _plugin.show(
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: const NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+        macOS: iosDetails,
+      ),
+      payload: jsonEncode(<String, String>{
+        'type': 'support_reply',
+        'conversation_id': conversationId,
+      }),
     );
   }
 
